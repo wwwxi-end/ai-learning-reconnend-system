@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}添加用户{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-md-7">
+<div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-person-plus me-2"></i>添加新用户</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">用户名 <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="username" required placeholder="登录用户名">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">初始密码 <span class="text-danger">*</span></label>
+                    <input type="password" class="form-control" name="password" required value="123456">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">真实姓名 <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="real_name" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">角色 <span class="text-danger">*</span></label>
+                    <select class="form-select" name="role" id="roleSelect" onchange="toggleRoleFields()">
+                        <option value="student">学生</option>
+                        <option value="teacher">教师</option>
+                        <option value="admin">管理员</option>
+                    </select>
+                </div>
+                <div class="col-md-6 student-field">
+                    <label class="form-label">学号</label>
+                    <input type="text" class="form-control" name="student_id" placeholder="可选">
+                </div>
+                <div class="col-md-6 teacher-field d-none">
+                    <label class="form-label">工号</label>
+                    <input type="text" class="form-control" name="teacher_id" placeholder="可选">
+                </div>
+                <div class="col-md-6 teacher-field d-none">
+                    <label class="form-label">所属课程组</label>
+                    <select class="form-select" name="course_group">
+                        <option value="">-- 不分配 --</option>
+                        {% for cg in course_groups %}
+                        <option value="{{ cg.name }}">{{ cg.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">院系/部门</label>
+                    <input type="text" class="form-control" name="department" placeholder="如：计算机学院">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">邮箱</label>
+                    <input type="email" class="form-control" name="email" placeholder="可选">
+                </div>
+            </div>
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>创建用户</button>
+                <a href="{{ url_for('admin.user_list') }}" class="btn btn-outline-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function toggleRoleFields() {
+    const role = document.getElementById('roleSelect').value;
+    document.querySelectorAll('.student-field').forEach(el => el.classList.toggle('d-none', role !== 'student'));
+    document.querySelectorAll('.teacher-field').forEach(el => el.classList.toggle('d-none', role !== 'teacher'));
+}
+</script>
+{% endblock %}

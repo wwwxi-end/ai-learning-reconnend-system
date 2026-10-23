@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}用户管理{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5><i class="bi bi-people me-2"></i>用户管理</h5>
+    <div>
+        <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary btn-sm me-2">
+            <i class="bi bi-plus-circle me-1"></i>添加用户
+        </a>
+        <a href="{{ url_for('admin.batch_import_users') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-upload me-1"></i>批量导入
+        </a>
+    </div>
+</div>
+
+<!-- 角色筛选 -->
+<div class="btn-group mb-3">
+    <a href="?role=student" class="btn btn-sm {{ 'btn-success' if role == 'student' else 'btn-outline-success' }}">学生</a>
+    <a href="?role=teacher" class="btn btn-sm {{ 'btn-primary' if role == 'teacher' else 'btn-outline-primary' }}">教师</a>
+    <a href="?role=admin" class="btn btn-sm {{ 'btn-danger' if role == 'admin' else 'btn-outline-danger' }}">管理员</a>
+</div>
+
+<!-- 搜索 -->
+<form class="mb-3 d-flex gap-2" method="GET">
+    <input type="hidden" name="role" value="{{ role }}">
+    <input type="text" class="form-control form-control-sm" name="keyword" value="{{ keyword }}" placeholder="搜索姓名/用户名/学号">
+    <button type="submit" class="btn btn-outline-primary btn-sm"><i class="bi bi-search"></i></button>
+</form>
+
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th><th>姓名</th><th>用户名</th>
+                    {% if role == 'student' %}<th>学号</th>{% elif role == 'teacher' %}<th>工号</th><th>课程组</th>{% endif %}
+                    <th>院系</th><th>状态</th><th>注册时间</th><th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for user in pagination.items %}
+            <tr>
+                <td><small class="text-muted">{{ user.id }}</small></td>
+                <td><strong>{{ user.real_name }}</strong></td>
+                <td>{{ user.username }}</td>
+                {% if role == 'student' %}
+                    <td><small>{{ user.student_id or '-' }}</small></td>
+                {% elif role == 'teacher' %}
+                    <td><small>{{ user.teacher_id or '-' }}</small></td>
+                    <td><small>{{ user.course_group or '-' }}</small></td>
+                {% endif %}
+                <td><small>{{ user.department or '-' }}</small></td>
+                <td>
+                    <span class="badge bg-{{ 'success' if user.is_active else 'secondary' }}">
+                        {{ '正常' if user.is_active else '禁用' }}
+                    </span>
+                </td>
+                <td><small class="text-muted">{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else '-' }}</small></td>
+                <td>
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-sm btn-outline-{{ 'warning' if user.is_active else 'success' }}"
+                                onclick="toggleUser({{ user.id }}, this)" title="{{ '禁用' if user.is_active else '启用' }}">
+                            <i class="bi bi-{{ 'pause-circle' if user.is_active else 'play-circle' }}"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="resetPassword({{ user.id }}, '{{ user.real_name }}')" title="重置密码">
+                            <i class="bi bi-key"></i>
+                        </button>
+                        {% if role == 'student' %}
+                        <a href="{{ url_for('teacher.student_detail', student_id=user.id) }}" class="btn btn-sm btn-outline-info" title="查看学习详情">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="10" class="text-center text-muted py-4">暂无数据</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if pagination.pages > 1 %}
+    <div class="card-footer d-flex justify-content-between align-items-center">
+        <small class="text-muted">共 {{ pagination.total }} 条</small>
+        <nav><ul class="pagination pagination-sm mb-0">
+            {% if pagination.has_prev %}
+            <li class="page-item"><a class="page-link" href="?role={{ role }}&page={{ pagination.prev_num }}&keyword={{ keyword }}">上一页</a></li>
+            {% endif %}
+            <li class="page-item active"><a class="page-link">{{ pagination.page }}</a></li>
+            {% if pagination.has_next %}
+            <li class="page-item"><a class="page-link" href="?role={{ role }}&page={{ pagination.next_num }}&keyword={{ keyword }}">下一页</a></li>
+            {% endif %}
+        </ul></nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function toggleUser(id, btn) {
+    fetch(`/admin/users/${id}/toggle`, {method:'POST'}).then(r=>r.json()).then(data => {
+        location.reload();
+    });
+}
+function resetPassword(id, name) {
+    const pwd = prompt(`请输入为 ${name} 设置的新密码（默认123456）：`, '123456');
+    if (!pwd) return;
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/admin/users/${id}/reset_password`;
+    const inp = document.createElement('input');
+    inp.name = 'new_password'; inp.value = pwd;
+    form.appendChild(inp);
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
+{% endblock %}

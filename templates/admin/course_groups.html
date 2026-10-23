@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}课程组管理{% endblock %}
+{% block content %}
+<div class="row g-4">
+<div class="col-md-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white fw-bold">创建课程组</div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('admin.create_course_group') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-2">
+                    <input type="text" class="form-control" name="name" placeholder="课程组名称 *" required>
+                </div>
+                <div class="mb-2">
+                    <input type="text" class="form-control" name="course_name" placeholder="对应课程（如：计算机组成原理）" required>
+                </div>
+                <div class="mb-3">
+                    <textarea class="form-control" name="description" rows="2" placeholder="描述（可选）"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">创建</button>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="col-md-8">
+    <div class="card shadow-sm">
+        <div class="card-header fw-bold">课程组列表</div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light"><tr><th>名称</th><th>课程</th><th>描述</th><th>创建时间</th></tr></thead>
+                <tbody>
+                {% for g in groups %}
+                <tr>
+                    <td><strong>{{ g.name }}</strong></td>
+                    <td>{{ g.course_name }}</td>
+                    <td><small class="text-muted">{{ g.description or '-' }}</small></td>
+                    <td><small class="text-muted">{{ g.created_at.strftime('%Y-%m-%d') if g.created_at else '-' }}</small></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="text-center text-muted py-3">暂无课程组</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% block title %}教师首页{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4><i class="bi bi-person-badge text-primary me-2"></i>欢迎，{{ current_user.real_name }} 老师</h4>
+    <button class="btn btn-primary action-btn" onclick="getAIAdvice()" id="aiBtn">
+        <i class="bi bi-robot me-1"></i>获取AI建议
+    </button>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="num text-primary">{{ my_materials }}</div>
+            <div class="label">上传材料</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="num text-success">{{ my_questions }}</div>
+            <div class="label">创建题目</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="num text-warning">{{ weak_kps|length }}</div>
+            <div class="label">薄弱知识点</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="num text-info">{{ class_analysis|length }}</div>
+            <div class="label">已统计知识点</div>
+        </div>
+    </div>
+</div>
+
+<div id="aiAdviceArea" class="course-card d-none mb-4">
+    <h5 class="font-weight-bold text-gray-800 mb-2"><i class="bi bi-robot text-primary me-1"></i>AI教学建议</h5>
+    <div id="aiAdviceContent" class="text-pre-wrap text-sm text-gray-600 bg-primary/5 p-3 rounded-xl"></div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="course-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="font-weight-bold text-gray-800"><i class="bi bi-exclamation-triangle text-warning me-2"></i>班级薄弱知识点 TOP5</h5>
+                <a href="{{ url_for('teacher.class_analysis') }}" class="btn btn-sm btn-outline-warning">查看全部</a>
+            </div>
+            <div id="weakKpChart" style="height:280px"></div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="course-card">
+            <h5 class="font-weight-bold text-gray-800 mb-4"><i class="bi bi-lightning text-primary me-2"></i>快速操作</h5>
+            <div class="space-y-3">
+                <a href="{{ url_for('teacher.upload_material') }}" class="btn btn-outline-primary w-full py-3">
+                    <i class="bi bi-cloud-upload me-2"></i>上传学习材料（视频/文本）
+                </a>
+                <a href="{{ url_for('teacher.create_question') }}" class="btn btn-outline-success w-full py-3">
+                    <i class="bi bi-plus-square me-2"></i>创建测验题目
+                </a>
+                <a href="{{ url_for('teacher.class_analysis') }}" class="btn btn-outline-warning w-full py-3">
+                    <i class="bi bi-bar-chart-line me-2"></i>查看班级学习分析报告
+                </a>
+                <a href="{{ url_for('teacher.prerequisite_manage') }}" class="btn btn-outline-info w-full py-3">
+                    <i class="bi bi-diagram-2 me-2"></i>管理知识点前驱关系
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+<script>
+const classData = {{ class_analysis[:8]|tojson }};
+
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('weakKpChart');
+    if (!container) return;
+
+    const chart = echarts.init(container);
+    const chartOption = {
+        tooltip: { trigger: 'axis', formatter: '{b}<br/>均分: {c}' },
+        grid: { left: '3%', right: '3%', bottom: '20%', containLabel: true },
+        xAxis: { type: 'category', data: classData.map(d => d.kp_name.length > 8 ? d.kp_name.slice(0,8)+'...' : d.kp_name),
+                 axisLabel: { rotate: 30, fontSize: 11, color: '#64748b' } },
+        yAxis: { type: 'value', max: 100, name: '均分', nameTextStyle: { color: '#94a3b8' } },
+        series: [{
+            type: 'bar', barMaxWidth: 45,
+            data: classData.map(d => {
+                if (d.avg_score === null || d.avg_score === undefined) {
+                    return { value: 0, itemStyle: { color: '#d9d9d9', borderRadius: [6, 6, 0, 0] } };
+                }
+                return {
+                    value: d.avg_score,
+                    itemStyle: { 
+                        color: d.avg_score < 60 ? '#ef4444' : (d.avg_score < 75 ? '#f59e0b' : '#22c55e'),
+                        borderRadius: [6, 6, 0, 0]
+                    }
+                };
+            }),
+            label: { show: true, position: 'top', fontSize: 11, fontWeight: 'bold', formatter: (params) => {
+                const val = params.value;
+                if (val === 0) return '-';
+                return Number.isInteger(val) ? val : val.toFixed(2);
+            }},
+            markLine: { data: [{ yAxis: 60, lineStyle: {color:'#ef4444', type:'dashed'} }] }
+        }]
+    };
+
+    if (classData && classData.length > 0) {
+        chart.setOption(chartOption);
+    } else {
+        container.innerHTML = '<div style="text-align:center;padding-top:50px;color:#94a3b8">暂无数据</div>';
+    }
+
+    window.addEventListener('resize', () => chart.resize());
+});
+
+async function getAIAdvice() {
+    const btn = document.getElementById('aiBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>分析中...';
+    const resp = await fetch('/teacher/class_analysis/ai_advice');
+    const data = await resp.json();
+    document.getElementById('aiAdviceContent').innerText = data.advice;
+    document.getElementById('aiAdviceArea').classList.remove('d-none');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-robot me-1"></i>刷新AI建议';
+}
+</script>
+{% endblock %}

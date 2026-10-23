@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 计算机组成原理学习系统</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💻</text></svg>" type="image/svg+xml">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --primary-dark: #4f46e5;
+            --bg-gradient: linear-gradient(135deg, #1e1b4b 0%, #312e81 30%, #4c1d95 60%, #7c3aed 100%);
+            --card-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: var(--bg-gradient);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+        }
+
+        .login-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .login-left {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 60px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-left::before {
+            content: '';
+            position: absolute;
+            top: -100px;
+            right: -100px;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .login-left::after {
+            content: '';
+            position: absolute;
+            bottom: -50px;
+            left: -50px;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(167, 139, 250, 0.2) 0%, transparent 60%);
+            border-radius: 50%;
+        }
+
+        .logo-section {
+            position: relative;
+            z-index: 1;
+            margin-bottom: 40px;
+        }
+
+        .logo-icon {
+            width: 64px;
+            height: 64px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo-icon i {
+            font-size: 32px;
+            background: linear-gradient(135deg, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-title {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-subtitle {
+            font-size: 15px;
+            opacity: 0.8;
+            color: #c7d2fe;
+        }
+
+        .feature-list {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 60px;
+        }
+
+        .feature-item {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .feature-item:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-4px);
+        }
+
+        .feature-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(167, 139, 250, 0.3));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+
+        .feature-icon i {
+            font-size: 20px;
+            color: var(--primary-light);
+        }
+
+        .feature-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .feature-desc {
+            font-size: 12px;
+            opacity: 0.7;
+            color: #c7d2fe;
+        }
+
+        .login-right {
+            width: 420px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 50px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-right::before {
+            content: '';
+            position: absolute;
+            top: -200px;
+            right: -100px;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
+        }
+
+        .login-form {
+            position: relative;
+            z-index: 1;
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .form-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .form-subtitle {
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            background: #f8fafc;
+            outline: none;
+        }
+
+        .form-input:focus {
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: #94a3b8;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 16px;
+        }
+
+        .input-group .form-input {
+            padding-left: 44px;
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .checkbox-wrapper span {
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .forgot-link {
+            font-size: 13px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .forgot-link:hover {
+            text-decoration: underline;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-login:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 30px 0;
+        }
+
+        .divider-line {
+            flex: 1;
+            height: 1px;
+            background: #e2e8f0;
+        }
+
+        .divider-text {
+            padding: 0 16px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .role-tabs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .role-tab {
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: white;
+        }
+
+        .role-tab.active {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .role-tab i {
+            font-size: 20px;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .role-tab.active i {
+            color: var(--primary);
+        }
+
+        .role-tab span {
+            font-size: 12px;
+            font-weight: 500;
+            color: #64748b;
+        }
+
+        .role-tab.active span {
+            color: var(--primary);
+        }
+
+        .test-accounts {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .test-header {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .test-header i {
+            font-size: 14px;
+            color: #f59e0b;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .test-item {
+            background: white;
+            border-radius: 8px;
+            padding: 12px 8px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+
+        .test-item .role {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .test-item .credential {
+            font-size: 11px;
+            color: #64748b;
+            word-break: break-all;
+        }
+
+        .test-item.admin .role { color: #ef4444; }
+        .test-item.teacher .role { color: #f59e0b; }
+        .test-item.student .role { color: #22c55e; }
+
+        .alert-message {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #dc2626;
+            font-size: 13px;
+        }
+
+        .alert-message i {
+            font-size: 16px;
+        }
+
+        @media (max-width: 900px) {
+            .login-left {
+                display: none;
+            }
+            .login-right {
+                width: 100%;
+                padding: 40px 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-left">
+            <div class="logo-section">
+                <div class="logo-icon">
+                    <i class="bi bi-cpu"></i>
+                </div>
+                <div class="logo-title">计算机组成原理</div>
+                <div class="logo-subtitle">新一代智能学习诊断系统</div>
+            </div>
+
+            <div class="feature-list">
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="bi bi-clipboard-pulse"></i>
+                    </div>
+                    <div class="feature-title">多维薄弱检测</div>
+                    <div class="feature-desc">自动识别绝对、相对、高危薄弱点</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="bi bi-diagram-3"></i>
+                    </div>
+                    <div class="feature-title">知识图谱</div>
+                    <div class="feature-desc">可视化知识关联与掌握状态</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="bi bi-lightbulb"></i>
+                    </div>
+                    <div class="feature-title">智能推荐</div>
+                    <div class="feature-desc">个性化学习路径与建议</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="bi bi-chat-dots"></i>
+                    </div>
+                    <div class="feature-title">AI辅导</div>
+                    <div class="feature-desc">智能问答与错题讲解</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="login-right">
+            <div class="login-form">
+                <div class="form-header">
+                    <div class="form-title">欢迎回来</div>
+                    <div class="form-subtitle">登录您的学习空间</div>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for cat, msg in messages %}
+                <div class="alert-message">
+                    <i class="bi bi-exclamation-circle"></i>
+                    {{ msg }}
+                </div>
+                {% endfor %}
+                {% endwith %}
+
+                <form method="POST" action="{{ url_for('auth.login') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="role-tabs">
+                        <label class="role-tab active">
+                            <input type="radio" name="role" value="student" checked style="display: none;">
+                            <i class="bi bi-person"></i>
+                            <span>学生</span>
+                        </label>
+                        <label class="role-tab">
+                            <input type="radio" name="role" value="teacher" style="display: none;">
+                            <i class="bi bi-chalkboard"></i>
+                            <span>教师</span>
+                        </label>
+                        <label class="role-tab">
+                            <input type="radio" name="role" value="admin" style="display: none;">
+                            <i class="bi bi-shield"></i>
+                            <span>管理员</span>
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">用户名</label>
+                        <div class="input-group">
+                            <i class="bi bi-person"></i>
+                            <input type="text" class="form-input" name="username" placeholder="请输入用户名" required autofocus>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">密码</label>
+                        <div class="input-group">
+                            <i class="bi bi-lock"></i>
+                            <input type="password" class="form-input" name="password" placeholder="请输入密码" required>
+                        </div>
+                    </div>
+
+                    <div class="form-options">
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" name="remember">
+                            <span>记住我</span>
+                        </label>
+                        <a href="{{ url_for('auth.forgot_password') }}" class="forgot-link">忘记密码?</a>
+                    </div>
+
+                    <button type="submit" class="btn-login">
+                        登 录
+                    </button>
+                </form>
+
+                
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const roleTabs = document.querySelectorAll('.role-tab');
+        roleTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const radio = tab.querySelector('input[type="radio"]');
+                if (radio) {
+                    radio.checked = true;
+                    roleTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                }
+            });
+        });
+
+        const roleRadios = document.querySelectorAll('input[name="role"]');
+        roleRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                if (radio.checked) {
+                    const label = radio.closest('.role-tab');
+                    if (label) {
+                        roleTabs.forEach(t => t.classList.remove('active'));
+                        label.classList.add('active');
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

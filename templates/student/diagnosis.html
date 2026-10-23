@@ -1,0 +1,314 @@
+{% extends 'base.html' %}
+{% block title %}薄弱点诊断报告{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h5 class="font-weight-bold text-gray-800"><i class="bi bi-clipboard-pulse text-danger me-2"></i>四维度薄弱点诊断报告</h5>
+    <small class="text-gray-400">{{ weak_analysis.summary.get('detected_at', '-') }}</small>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="num text-primary">{{ weak_analysis.summary.get('personal_avg', 0)|round(1) }}</div>
+            <div class="label">个人均分</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card" style="background:#fee2e2">
+            <div class="num text-danger">{{ weak_analysis.absolute_weak|length }}</div>
+            <div class="label">绝对薄弱</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card" style="background:#fef3c7">
+            <div class="num text-warning">{{ weak_analysis.relative_weak|length }}</div>
+            <div class="label">相对薄弱</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card" style="background:#dbeafe">
+            <div class="num text-info">{{ weak_analysis.forgetting_trend|length }}</div>
+            <div class="label">遗忘趋势</div>
+        </div>
+    </div>
+</div>
+
+<div id="aiAnalysisCard" class="course-card bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100 d-none">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <i class="bi bi-robot" style="color:#8b5cf6;font-size:1.2rem"></i>
+        <span class="font-medium text-gray-700">AI智能分析</span>
+    </div>
+    <div id="aiAnalysisContent" class="text-sm text-gray-600 whitespace-pre-wrap"></div>
+</div>
+<div id="aiAnalysisLoading" class="course-card bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <i class="bi bi-robot" style="color:#8b5cf6;font-size:1.2rem"></i>
+        <span class="font-medium text-gray-700">AI智能分析</span>
+        <span class="spinner-border spinner-border-sm text-primary ml-auto" role="status"></span>
+    </div>
+    <div class="text-sm text-gray-500">正在分析您的学习数据，稍等片刻...</div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="course-card">
+            <h5 class="font-weight-bold text-gray-800 mb-3"><i class="bi bi-radar text-primary me-2"></i>章节掌握程度雷达图</h5>
+            <div id="radarChart" style="height:280px"></div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="course-card">
+            <h5 class="font-weight-bold text-gray-800 mb-3"><i class="bi bi-bar-chart text-primary me-2"></i>分数段分布</h5>
+            <div id="distributionChart" style="height:280px"></div>
+        </div>
+    </div>
+</div>
+
+{% if weak_analysis.forgetting_trend %}
+<div class="course-card">
+    <h5 class="font-weight-bold text-gray-800 mb-3"><i class="bi bi-line-chart text-info me-2"></i>遗忘趋势折线图</h5>
+    <div id="forgettingChart" style="height:300px"></div>
+</div>
+{% endif %}
+
+{% macro weak_section(items, title, color_class, icon, bg_color) %}
+{% if items %}
+<div class="course-card" style="border-left:4px solid {{ bg_color }}">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="font-weight-bold text-gray-800"><i class="bi bi-{{ icon }} text-{{ color_class }} me-2"></i>{{ title }}（{{ items|length }}个）</h5>
+        <span class="badge" style="background:{{ bg_color }}20;color:{{ bg_color }}">{{ items|length }}个需关注</span>
+    </div>
+    <div class="space-y-2">
+    {% for item in items %}
+    <div class="d-flex justify-content-between align-items-center p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+        <div class="flex-grow-1">
+            <div class="font-medium text-gray-800">{{ item.kp_name }}</div>
+            <div class="text-xs text-gray-400 mt-1">
+                {% if item.gap is defined %}距60分差{{ item.gap|int }}分
+                {% elif item.blocks_count is defined %}阻塞{{ item.blocks_count }}个知识点
+                {% elif item.slope is defined %}分数下降斜率{{ item.slope }}（最高{{ item.best_score|int }}分→现{{ item.score|int }}分，共{{ item.attempts }}次）
+                {% elif item.gap_ratio is defined %}低于个人平均{{ item.gap_ratio }}%
+                {% endif %}
+            </div>
+        </div>
+        <div class="text-right">
+            {% if item.score is not none %}
+            <span class="score-badge" style="background:{{ '#22c55e' if item.score >= 60 else ('#f59e0b' if item.score >= 40 else '#ef4444') }};color:white">
+                {{ item.score|int }}分
+            </span>
+            {% else %}
+            <span class="score-badge" style="background:#d9d9d9;color:#666">未测验</span>
+            {% endif %}
+            <a href="{{ url_for('student.learn_kp', kp_id=item.kp_id) }}" class="btn btn-sm btn-primary action-btn mt-2">去学习</a>
+        </div>
+    </div>
+    {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endmacro %}
+
+{{ weak_section(weak_analysis.absolute_weak, '🔴 绝对薄弱（分数 < 60）', 'danger', 'exclamation-triangle-fill', '#ef4444') }}
+{{ weak_section(weak_analysis.relative_weak, '🟡 相对薄弱（低于个人均分20%）', 'warning', 'arrow-down-circle-fill', '#f59e0b') }}
+{{ weak_section(weak_analysis.high_risk_weak, '🟣 高危薄弱（阻塞后续学习）', 'purple', 'shield-exclamation', '#8b5cf6') }}
+{{ weak_section(weak_analysis.forgetting_trend, '🔵 遗忘趋势（分数持续下降）', 'info', 'graph-down-arrow', '#06b6d4') }}
+
+{% if not (weak_analysis.absolute_weak or weak_analysis.relative_weak or weak_analysis.high_risk_weak or weak_analysis.forgetting_trend) %}
+<div class="course-card text-center py-8">
+    <div class="w-20 h-20 mx-auto mb-4 bg-success/10 rounded-full flex items-center justify-center">
+        <i class="bi bi-emoji-smile text-success" style="font-size:3rem"></i>
+    </div>
+    <h5 class="text-success font-weight-bold">太棒了！暂未发现薄弱点</h5>
+    <p class="text-gray-400 mt-2">继续保持学习，建议完成更多知识点的学习和测验</p>
+    <a href="{{ url_for('student.knowledge_list') }}" class="btn btn-success action-btn mt-4">继续学习</a>
+</div>
+{% endif %}
+
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+<script>
+function initDiagnosis() {
+    if (!document.getElementById('radarChart')) return;
+
+    fetch('/api/student/chapter_radar').then(r=>r.json()).then(data => {
+        const radar = echarts.init(document.getElementById('radarChart'));
+        radar.setOption({
+            tooltip: { trigger: 'item' },
+            radar: {
+                indicator: data.indicators,
+                radius: '65%',
+                splitLine: { lineStyle: { color: 'rgba(59,130,246,0.2)' } },
+                axisLine: { lineStyle: { color: '#e2e8f0' } },
+                splitArea: { areaStyle: { color: ['rgba(59,130,246,0.05)', 'rgba(59,130,246,0.1)'] } },
+                axisName: { color: '#64748b', fontSize: 12 }
+            },
+            series: [{
+                type: 'radar',
+                data: [{
+                    value: data.values,
+                    name: '我的掌握程度',
+                    symbol: 'circle',
+                    symbolSize: 6,
+                    lineStyle: { color: '#3b82f6', width: 2 },
+                    areaStyle: { color: 'rgba(59,130,246,0.25)' },
+                    itemStyle: { color: '#3b82f6' }
+                }]
+            }]
+        });
+        window.addEventListener('resize', () => radar.resize());
+    });
+
+    fetch('/api/student/score_distribution').then(r=>r.json()).then(data => {
+        const chart = echarts.init(document.getElementById('distributionChart'));
+        chart.setOption({
+            tooltip: { trigger: 'axis', formatter: '{b}: {c}个知识点' },
+            grid: { left: '3%', right: '3%', bottom: '10%', containLabel: true },
+            xAxis: { 
+                type: 'category', 
+                data: data.categories,
+                axisLabel: { color: '#64748b', fontSize: 12 },
+                axisLine: { lineStyle: { color: '#e2e8f0' } }
+            },
+            yAxis: { 
+                type: 'value', 
+                name: '知识点数',
+                nameTextStyle: { color: '#94a3b8' },
+                axisLabel: { color: '#64748b' },
+                splitLine: { lineStyle: { color: '#f1f5f9' } }
+            },
+            series: [{
+                type: 'bar', 
+                barMaxWidth: 50,
+                data: data.values.map((v,i) => ({
+                    value: v, 
+                    itemStyle: { 
+                        color: data.colors[i],
+                        borderRadius: [6, 6, 0, 0]
+                    }
+                })),
+                label: { show: true, position: 'top', fontSize: 12, fontWeight: 'bold' }
+            }]
+        });
+        window.addEventListener('resize', () => chart.resize());
+    });
+
+    fetch('/api/student/forgetting_trend').then(r=>r.json()).then(data => {
+        if (!data || data.length === 0) return;
+        
+        const chart = echarts.init(document.getElementById('forgettingChart'));
+        const colors = ['#06b6d4', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#10b981'];
+        
+        const series = data.map((item, index) => ({
+            name: item.kp_name,
+            type: 'line',
+            smooth: true,
+            symbol: 'circle',
+            symbolSize: 8,
+            lineStyle: { 
+                color: colors[index % colors.length], 
+                width: 3 
+            },
+            itemStyle: { 
+                color: colors[index % colors.length],
+                borderColor: '#fff',
+                borderWidth: 2
+            },
+            areaStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: colors[index % colors.length] + '40' },
+                    { offset: 1, color: colors[index % colors.length] + '05' }
+                ])
+            },
+            data: item.scores,
+            markPoint: {
+                data: [
+                    { type: 'max', name: '最高', itemStyle: { color: '#10b981' } },
+                    { type: 'min', name: '最低', itemStyle: { color: '#ef4444' } }
+                ],
+                label: { formatter: '{c}分', fontSize: 10 }
+            },
+            markLine: {
+                data: [{ type: 'average', name: '平均分', lineStyle: { type: 'dashed', color: '#94a3b8' } }]
+            }
+        }));
+        
+        chart.setOption({
+            tooltip: {
+                trigger: 'axis',
+                formatter: function(params) {
+                    let result = `<strong>${params[0].axisValue}</strong><br/>`;
+                    params.forEach(p => {
+                        result += `${p.marker} ${p.seriesName}: <strong>${p.value}</strong>分<br/>`;
+                    });
+                    return result;
+                }
+            },
+            legend: {
+                data: data.map(item => item.kp_name),
+                top: 0,
+                textStyle: { color: '#64748b' }
+            },
+            grid: { left: '3%', right: '3%', bottom: '10%', top: '15%', containLabel: true },
+            xAxis: {
+                type: 'category',
+                data: data[0].dates,
+                axisLabel: { 
+                    color: '#64748b', 
+                    fontSize: 11,
+                    rotate: data[0].dates.length > 5 ? 30 : 0
+                },
+                axisLine: { lineStyle: { color: '#e2e8f0' } },
+                name: '时间',
+                nameTextStyle: { color: '#94a3b8' }
+            },
+            yAxis: {
+                type: 'value',
+                min: 0,
+                max: 100,
+                axisLabel: { 
+                    color: '#64748b',
+                    formatter: '{value}分'
+                },
+                splitLine: { lineStyle: { color: '#f1f5f9' } },
+                name: '分数',
+                nameTextStyle: { color: '#94a3b8' }
+            },
+            series: series
+        });
+        window.addEventListener('resize', () => chart.resize());
+    });
+
+    setTimeout(() => {
+        fetch('/student/diagnosis/ai_analysis', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ weak_analysis: {{ weak_analysis|tojson|safe }} })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const loading = document.getElementById('aiAnalysisLoading');
+            const card = document.getElementById('aiAnalysisCard');
+            const content = document.getElementById('aiAnalysisContent');
+            
+            if (loading) loading.classList.add('d-none');
+            
+            if (data && data.ai_analysis) {
+                content.textContent = typeof data.ai_analysis === 'object' ? JSON.stringify(data.ai_analysis, null, 2) : data.ai_analysis;
+                card.classList.remove('d-none');
+            } else {
+                if (card) card.classList.add('d-none');
+            }
+        })
+        .catch(error => {
+            const loading = document.getElementById('aiAnalysisLoading');
+            if (loading) loading.classList.add('d-none');
+            console.error('Failed to load AI analysis:', error);
+        });
+    }, 500);
+}
+
+document.addEventListener('DOMContentLoaded', initDiagnosis);
+</script>
+{% endblock %}

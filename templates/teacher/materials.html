@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}学习材料{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5>我的学习材料</h5>
+    <a href="{{ url_for('teacher.upload_material') }}" class="btn btn-primary btn-sm">上传材料</a>
+</div>
+<!-- 筛选 -->
+<div class="mb-3">
+    <div class="btn-group btn-group-sm">
+        <a href="{{ url_for('teacher.material_list') }}" class="btn {{ 'btn-secondary' if not current_kp_id else 'btn-outline-secondary' }}">全部</a>
+        {% for kp in kps %}
+        <a href="{{ url_for('teacher.material_list', kp_id=kp.id) }}"
+           class="btn {{ 'btn-primary' if current_kp_id == kp.id else 'btn-outline-primary' }}">{{ kp.name[:8] }}</a>
+        {% endfor %}
+    </div>
+</div>
+<div class="row g-3">
+{% for m in pagination.items %}
+<div class="col-md-4">
+    <div class="card shadow-sm h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-{{ 'danger' if m.material_type == 'video' else ('primary' if m.material_type == 'pdf' else 'secondary') }}">
+                    {{ {'video':'📹视频','text':'📄文本','pdf':'📑PDF'}[m.material_type] }}
+                </span>
+                {% if m.external_url %}
+                <span class="badge bg-info/20 text-info text-xs"><i class="bi bi-link-45deg"></i> 外部链接</span>
+                {% endif %}
+            </div>
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteMaterial({{ m.id }})">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+        <div class="card-body">
+            <h6 class="card-title">{{ m.title }}</h6>
+            <p class="card-text text-muted small">{{ m.description or '暂无描述' }}</p>
+            <div class="text-muted" style="font-size:0.75rem">
+                知识点：{{ m.knowledge_point.name if m.knowledge_point else '-' }}<br>
+                上传：{{ m.created_at.strftime('%Y-%m-%d') if m.created_at else '-' }}
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="col-12 text-center text-muted py-5"><i class="bi bi-inbox" style="font-size:3rem"></i><br>暂无材料</div>
+{% endfor %}
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function deleteMaterial(id) {
+    if (!confirm('确认删除该材料？')) return;
+    fetch(`/teacher/materials/${id}/delete`, {method:'POST'}).then(() => location.reload());
+}
+</script>
+{% endblock %}

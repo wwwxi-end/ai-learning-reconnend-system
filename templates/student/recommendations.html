@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% block title %}个性化推荐{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h5><i class="bi bi-lightbulb text-warning me-2"></i>个性化学习路径推荐（Top-5）</h5>
+    <a href="{{ url_for('student.learning_plan') }}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-file-earmark-text me-1"></i>生成完整学习计划
+    </a>
+</div>
+
+{% if error_msg %}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <div class="d-flex align-items-center gap-2 mb-2">
+        <i class="bi bi-exclamation-triangle"></i>
+        <strong>推荐生成出错</strong>
+    </div>
+    <p class="mb-2 text-sm">{{ error_msg }}</p>
+    <div class="d-flex justify-content-between align-items-center">
+        <small class="text-muted">请尝试完成更多知识点的学习和测验后刷新页面。如果问题持续，请联系教师。</small>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="location.reload()">
+                <i class="bi bi-arrow-clockwise me-1"></i>刷新重试
+            </button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if recommendations %}
+{% for rec in recommendations %}
+<div class="card shadow-sm mb-3 border-{{ 'danger' if rec.rank == 1 else ('warning' if rec.rank <= 3 else 'secondary') }}" style="border-left-width:4px">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="d-flex align-items-start gap-3 flex-grow-1">
+                <!-- 排名徽章 -->
+                <div class="text-center flex-shrink-0">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white"
+                         style="width:40px;height:40px;background:{{ '#ff4d4f' if rec.rank == 1 else ('#faad14' if rec.rank <= 3 else '#8c8c8c') }}">
+                        {{ rec.rank }}
+                    </div>
+                </div>
+                <!-- 知识点信息 -->
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <h6 class="fw-bold mb-0">{{ rec.kp_name }}</h6>
+                        <span class="badge bg-secondary">{{ rec.kp_chapter }}</span>
+                        {% if not rec.prerequisites_met %}
+                        <span class="badge bg-warning text-dark">需先完成前置</span>
+                        {% endif %}
+                    </div>
+                    <!-- 标签 -->
+                    <div class="d-flex flex-wrap gap-1 mb-2">
+                        {% for tag in rec.reason_tags|from_json %}
+                        <span class="badge rounded-pill bg-light text-dark border" style="font-size:0.72rem">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                    <!-- 推荐理由 -->
+                    <p class="text-muted small mb-2">{{ rec.reason }}</p>
+                    <!-- 元信息 -->
+                    <div class="d-flex gap-3" style="font-size:0.8rem;color:#888">
+                        <span><i class="bi bi-clock me-1"></i>预计{{ rec.estimated_minutes }}分钟</span>
+                        <span><i class="bi bi-star me-1"></i>难度 {{ '★'*rec.difficulty }}</span>
+                        {% if rec.current_score is not none %}
+                        <span><i class="bi bi-graph-up me-1"></i>当前得分 <strong class="text-{{ 'success' if rec.current_score >= 60 else ('warning' if rec.current_score >= 40 else 'danger') }}">{{ rec.current_score|int }}</strong>分</span>
+                        {% else %}
+                        <span><i class="bi bi-question-circle me-1"></i>尚未学习</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <!-- 操作按钮 -->
+            <div class="d-flex flex-column gap-2 ms-3">
+                <a href="{{ url_for('student.learn_kp', kp_id=rec.kp_id) }}"
+                   class="btn btn-primary btn-sm">
+                    <i class="bi bi-play-circle me-1"></i>开始学习
+                </a>
+                <button class="btn btn-outline-secondary btn-sm" onclick="showPath({{ rec.kp_id }}, '{{ rec.kp_name }}')">
+                    <i class="bi bi-diagram-2 me-1"></i>查看路径
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-lightbulb" style="font-size:3rem"></i>
+    <p class="mt-3">还没有足够的学习数据，请先完成一些知识点的学习和测验</p>
+    <a href="{{ url_for('student.knowledge_list') }}" class="btn btn-primary">去学习</a>
+</div>
+{% endif %}
+
+<!-- 学习路径弹窗 -->
+<div class="modal fade" id="pathModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">学习路径：<span id="pathTarget"></span></h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="pathBody"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+async function showPath(kpId, kpName) {
+    document.getElementById('pathTarget').textContent = kpName;
+    document.getElementById('pathBody').innerHTML = '<div class="text-center py-3"><span class="spinner-border text-primary"></span></div>';
+    new bootstrap.Modal(document.getElementById('pathModal')).show();
+
+    try {
+        const resp = await fetch(`/api/kp/learning_path/${kpId}`);
+        if (!resp.ok) {
+            throw new Error('网络请求失败');
+        }
+        const data = await resp.json();
+
+        if (!data.path || data.path.length === 0) {
+            document.getElementById('pathBody').innerHTML = '<div class="text-center py-4 text-muted">暂无学习路径数据</div>';
+            return;
+        }
+
+        let html = `<div class="alert alert-info py-2"><small>共 ${data.total_steps || data.path.length} 个步骤，已完成 ${data.mastered_steps || 0} 步，剩余 ${data.remaining_steps || data.path.length} 步</small></div>`;
+        html += '<div class="d-flex flex-column gap-2">';
+        data.path.forEach((step, i) => {
+            const isLast = step.is_target || i === data.path.length - 1;
+            html += `
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge rounded-circle ${step.mastered ? 'bg-success' : (isLast ? 'bg-primary' : 'bg-secondary')}" style="width:28px;height:28px;display:flex!important;align-items:center;justify-content:center">${i+1}</span>
+                <div class="flex-grow-1 p-2 border rounded ${step.mastered ? 'bg-success bg-opacity-10' : ''}">
+                    <span class="${isLast ? 'fw-bold' : ''}">${step.kp_name || step.name || '未知知识点'}</span>
+                    ${step.mastered ? '<span class="badge bg-success ms-2">✓ 已掌握</span>' : '<span class="badge bg-secondary ms-2">待学习</span>'}
+                    <small class="text-muted ms-2">${step.chapter || ''}</small>
+                </div>
+                ${i < data.path.length-1 ? '<i class="bi bi-arrow-down text-muted"></i>' : ''}
+            </div>`;
+        });
+        html += '</div>';
+        document.getElementById('pathBody').innerHTML = html;
+    } catch (error) {
+        console.error('获取学习路径失败:', error);
+        document.getElementById('pathBody').innerHTML = '<div class="text-center py-4 text-danger"><i class="bi bi-exclamation-circle me-2"></i>加载失败，请稍后重试</div>';
+    }
+}
+</script>
+{% endblock %}

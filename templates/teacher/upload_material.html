@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block title %}上传学习材料{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-md-8">
+<div class="card shadow-sm">
+    <div class="card-header bg-primary text-white"><h5 class="mb-0">上传学习材料</h5></div>
+    <div class="card-body">
+        <form method="POST" enctype="multipart/form-data" id="uploadForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">对应知识点 *</label>
+                    <select class="form-select" name="kp_id" required>
+                        <option value="">-- 选择知识点 --</option>
+                        {% for chapter, kp_list in kps|groupby('chapter') %}
+                        <optgroup label="{{ chapter or '其他' }}">
+                        {% for kp in kp_list %}
+                        <option value="{{ kp.id }}">{{ kp.name }}</option>
+                        {% endfor %}
+                        </optgroup>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">材料类型 *</label>
+                    <select class="form-select" name="material_type" id="materialType" onchange="toggleFields()">
+                        <option value="video">📹 视频</option>
+                        <option value="text">📄 文本</option>
+                        <option value="pdf">📑 PDF文档</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold">标题 *</label>
+                    <input type="text" class="form-control" name="title" required placeholder="材料标题">
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold">描述</label>
+                    <textarea class="form-control" name="description" rows="2" placeholder="材料简介（可选）"></textarea>
+                </div>
+
+                <div class="col-12">
+                    <ul class="nav nav-tabs">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="tab" href="#tab-local">本地文件</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" href="#tab-external">外部链接</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content mt-3">
+                        <div class="tab-pane fade show active" id="tab-local">
+                            <div id="fileField">
+                                <label class="form-label fw-semibold">上传文件</label>
+                                <input type="file" class="form-control" name="file" id="fileInput"
+                                       accept="video/*,application/pdf,.doc,.docx,.txt">
+                                <div class="form-text">视频支持 mp4/avi/mov/mkv，文档支持 pdf/doc/docx/txt，最大100MB</div>
+                                <div id="uploadProgress" class="progress mt-2 d-none" style="height:6px">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%"></div>
+                                </div>
+                            </div>
+                            <div class="d-none" id="textField">
+                                <label class="form-label fw-semibold">文本内容</label>
+                                <textarea class="form-control" name="content" rows="10"
+                                          placeholder="直接在此输入文本内容，支持Markdown格式..."></textarea>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="tab-external">
+                            <div id="externalUrlField">
+                                <label class="form-label fw-semibold">外部链接 URL *</label>
+                                <input type="url" class="form-control" name="external_url" id="externalUrlInput"
+                                       placeholder="输入视频或文档的外部链接（如B站、腾讯视频、百度文档等）">
+                                <div class="form-text">
+                                    <small class="text-gray-500">
+                                        <i class="bi bi-info-circle"></i> 支持 B站视频、腾讯视频、优酷、爱奇艺、百度文档、腾讯文档等链接
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="d-none" id="externalTextField">
+                                <label class="form-label fw-semibold">外部文本链接</label>
+                                <input type="url" class="form-control" name="external_url" id="externalTextInput"
+                                       placeholder="输入在线文本或文档链接">
+                                <div class="mt-3">
+                                    <label class="form-label fw-semibold">或者直接输入文本内容</label>
+                                    <textarea class="form-control" name="content" rows="10"
+                                              placeholder="直接在此输入文本内容..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-cloud-upload me-1"></i>保存</button>
+                <a href="{{ url_for('teacher.material_list') }}" class="btn btn-outline-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function toggleFields() {
+    const type = document.getElementById('materialType').value;
+    const fileField = document.getElementById('fileField');
+    const textField = document.getElementById('textField');
+    const externalUrlField = document.getElementById('externalUrlField');
+    const externalTextField = document.getElementById('externalTextField');
+
+    if (type === 'text') {
+        fileField.classList.add('d-none');
+        textField.classList.remove('d-none');
+        externalUrlField.classList.add('d-none');
+        externalTextField.classList.remove('d-none');
+    } else {
+        fileField.classList.remove('d-none');
+        textField.classList.add('d-none');
+        externalUrlField.classList.remove('d-none');
+        externalTextField.classList.add('d-none');
+    }
+}
+
+toggleFields();
+</script>
+{% endblock %}

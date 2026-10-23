@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}题目管理{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5>题目管理</h5>
+    <a href="{{ url_for('teacher.create_question') }}" class="btn btn-success btn-sm">创建题目</a>
+</div>
+<!-- 知识点统计 -->
+<div class="mb-3 p-3 bg-light rounded">
+    <small class="text-muted fw-bold">各知识点题目数量：</small>
+    {% for kp in kps %}
+    <a href="{{ url_for('teacher.question_list', kp_id=kp.id) }}"
+       class="badge {{ 'bg-success' if kp_question_counts.get(kp.id, 0) >= 5 else ('bg-warning' if kp_question_counts.get(kp.id, 0) > 0 else 'bg-secondary') }} text-decoration-none me-1 mb-1">
+        {{ kp.name[:10] }} ({{ kp_question_counts.get(kp.id, 0) }}/5)
+    </a>
+    {% endfor %}
+</div>
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr><th>#</th><th>知识点</th><th>题目</th><th>类型</th><th>难度</th><th>序号</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+            {% for q in pagination.items %}
+            <tr>
+                <td>{{ q.id }}</td>
+                <td><small class="badge bg-secondary">{{ q.knowledge_point.name[:12] if q.knowledge_point else '-' }}</small></td>
+                <td style="max-width:300px"><div class="text-truncate">{{ q.question_text }}</div></td>
+                <td><span class="badge bg-info">{{ {'single':'单选','multiple':'多选','truefalse':'判断'}[q.question_type] }}</span></td>
+                <td>{{ q.difficulty }}</td>
+                <td>{{ q.order_in_kp }}/5</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteQuestion({{ q.id }})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="text-center text-muted py-4">暂无题目</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function deleteQuestion(id) {
+    if (!confirm('确认删除该题目？')) return;
+    fetch(`/teacher/questions/${id}/delete`, {method:'POST'}).then(() => location.reload());
+}
+</script>
+{% endblock %}

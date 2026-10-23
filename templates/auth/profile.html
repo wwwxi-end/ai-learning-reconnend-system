@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}个人资料{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-md-8 col-lg-6">
+<div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-person-circle me-2"></i>个人资料</h5>
+    </div>
+    <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <table class="table table-borderless">
+                    <tr><td class="text-muted">姓名</td><td><strong>{{ user.real_name }}</strong></td></tr>
+                    <tr><td class="text-muted">用户名</td><td>{{ user.username }}</td></tr>
+                    <tr><td class="text-muted">角色</td><td>
+                        <span class="badge bg-{{ 'danger' if user.role == 'admin' else ('warning' if user.role == 'teacher' else 'success') }}">
+                            {{ {'admin': '管理员', 'teacher': '教师', 'student': '学生'}[user.role] }}
+                        </span>
+                    </td></tr>
+                    <tr><td class="text-muted">院系</td><td>{{ user.department or '-' }}</td></tr>
+                    {% if user.role == 'student' %}<tr><td class="text-muted">学号</td><td>{{ user.student_id or '-' }}</td></tr>{% endif %}
+                    {% if user.role == 'teacher' %}<tr><td class="text-muted">工号</td><td>{{ user.teacher_id or '-' }}</td></tr>{% endif %}
+                    <tr><td class="text-muted">最后登录</td><td>{{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else '-' }}</td></tr>
+                </table>
+            </div>
+        </div>
+        <!-- 修改邮箱 -->
+        <form method="POST" class="mb-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="update_info">
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                <input type="email" class="form-control" name="email" placeholder="邮箱" value="{{ user.email or '' }}">
+                <button type="submit" class="btn btn-outline-primary">更新邮箱</button>
+            </div>
+        </form>
+        <!-- 修改密码 -->
+        <hr>
+        <h6 class="text-muted">修改密码</h6>
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="change_password">
+            <div class="mb-2">
+                <input type="password" class="form-control" name="old_password" placeholder="原密码" required>
+            </div>
+            <div class="mb-2">
+                <input type="password" class="form-control" name="new_password" placeholder="新密码（至少6位）" required minlength="6">
+            </div>
+            <div class="mb-3">
+                <input type="password" class="form-control" name="confirm_password" placeholder="确认新密码" required>
+            </div>
+            <button type="submit" class="btn btn-warning"><i class="bi bi-key me-1"></i>修改密码</button>
+        </form>
+    </div>
+</div>
+</div>
+</div>
+{% endblock %}

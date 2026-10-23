@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}新一代教学平台{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.loli.net">
+    <link rel="preconnect" href="https://fonts.loli.net" crossorigin>
+    <link href="https://fonts.loli.net/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💻</text></svg>" type="image/svg+xml">
+    {% block extra_css %}{% endblock %}
+    <style>
+        :root {
+            --sidebar-width: 240px;
+            --sidebar-collapsed-width: 60px;
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --primary-dark: #4f46e5;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --glow-primary: 0 0 20px rgba(99, 102, 241, 0.3);
+            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+        }
+
+        .page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .page-loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loader-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--gray-100);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loader-text {
+            margin-top: 16px;
+            font-size: 14px;
+            color: var(--gray-500);
+            font-weight: 500;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--gray-50);
+            color: var(--gray-800);
+            overflow-x: hidden;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: var(--sidebar-width);
+            background: var(--gray-900);
+            color: white;
+            z-index: 1000;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar.collapsed {
+            width: var(--sidebar-collapsed-width);
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-logo i {
+            font-size: 28px;
+            color: var(--primary-light);
+        }
+
+        .sidebar-logo-text {
+            font-size: 16px;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .sidebar-toggle {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-toggle:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .sidebar-menu {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .sidebar-menu::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .sidebar-menu::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar-menu::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+
+        .nav-item {
+            margin-bottom: 4px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: var(--gray-400);
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .nav-link:hover {
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--primary-light);
+        }
+
+        .nav-link.active {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .nav-link.active:hover {
+            color: white;
+        }
+
+        .nav-link i {
+            font-size: 18px;
+            width: 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .nav-link span {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .nav-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 16px 0;
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .user-profile:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .user-info {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .user-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-role {
+            font-size: 11px;
+            color: var(--gray-400);
+            white-space: nowrap;
+        }
+
+        .user-arrow {
+            font-size: 12px;
+            color: var(--gray-500);
+        }
+
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+            padding: 24px;
+        }
+
+        .sidebar.collapsed ~ .main-content {
+            margin-left: var(--sidebar-collapsed-width);
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+
+        .page-subtitle {
+            font-size: 14px;
+            color: var(--gray-500);
+            margin-top: 4px;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-100);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .content-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .content-card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--gray-800);
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .sidebar.collapsed ~ .main-content {
+                margin-left: 0;
+            }
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            left: 16px;
+            top: 16px;
+            z-index: 1001;
+            background: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            box-shadow: var(--shadow-md);
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray-700);
+        }
+
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: flex;
+            }
+        }
+
+        .backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .backdrop.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<div class="page-loader" id="pageLoader">
+    <div class="loader-spinner"></div>
+    <div class="loader-text">加载中...</div>
+</div>
+
+{% if current_user.is_authenticated %}
+    <button class="mobile-menu-btn" onclick="toggleMobileSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <div class="backdrop" onclick="toggleMobileSidebar()"></div>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">
+                <i class="bi bi-mortarboard-fill"></i>
+                <span class="sidebar-logo-text">学习诊断</span>
+            </div>
+            <button class="sidebar-toggle" onclick="toggleSidebar()">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+        </div>
+
+        <nav class="sidebar-menu">
+            {% if current_user.role == 'student' %}
+            <a href="{{ url_for('student.dashboard') }}" class="nav-link {{ 'active' if request.path.startswith('/student/dashboard') else '' }}">
+                <i class="bi bi-house"></i>
+                <span>学习首页</span>
+            </a>
+            <a href="{{ url_for('student.knowledge_graph') }}" class="nav-link {{ 'active' if request.path.startswith('/student/knowledge_graph') else '' }}">
+                <i class="bi bi-diagram-3"></i>
+                <span>知识图谱</span>
+            </a>
+            <a href="{{ url_for('student.knowledge_list') }}" class="nav-link {{ 'active' if request.path.startswith('/student/knowledge') and not request.path.startswith('/student/knowledge_graph') else '' }}">
+                <i class="bi bi-book"></i>
+                <span>知识点</span>
+            </a>
+            <a href="{{ url_for('student.qa') }}" class="nav-link {{ 'active' if request.path.startswith('/student/qa') else '' }}">
+                <i class="bi bi-chat-dots"></i>
+                <span>智能问答</span>
+            </a>
+            <a href="{{ url_for('student.diagnosis') }}" class="nav-link {{ 'active' if request.path.startswith('/student/diagnosis') else '' }}">
+                <i class="bi bi-clipboard-pulse"></i>
+                <span>诊断报告</span>
+            </a>
+            <a href="{{ url_for('student.recommendations') }}" class="nav-link {{ 'active' if request.path.startswith('/student/recommendations') else '' }}">
+                <i class="bi bi-lightbulb"></i>
+                <span>智能推荐</span>
+            </a>
+            <a href="{{ url_for('student.learning_plan') }}" class="nav-link {{ 'active' if request.path.startswith('/student/plan') else '' }}">
+                <i class="bi bi-file-earmark-text"></i>
+                <span>学习计划</span>
+            </a>
+            {% elif current_user.role == 'teacher' %}
+            <a href="{{ url_for('teacher.dashboard') }}" class="nav-link {{ 'active' if request.path.startswith('/teacher/dashboard') else '' }}">
+                <i class="bi bi-speedometer2"></i>
+                <span>教师首页</span>
+            </a>
+            <a href="{{ url_for('teacher.material_list') }}" class="nav-link {{ 'active' if request.path.startswith('/teacher/material') else '' }}">
+                <i class="bi bi-collection-play"></i>
+                <span>学习材料</span>
+            </a>
+            <a href="{{ url_for('teacher.question_list') }}" class="nav-link {{ 'active' if request.path.startswith('/teacher/question') else '' }}">
+                <i class="bi bi-patch-question"></i>
+                <span>题目管理</span>
+            </a>
+            <a href="{{ url_for('teacher.class_analysis') }}" class="nav-link {{ 'active' if request.path.startswith('/teacher/class_analysis') and not request.path.startswith('/teacher/class_analysis/knowledge_graph') else '' }}">
+                <i class="bi bi-bar-chart-line"></i>
+                <span>班级分析</span>
+            </a>
+            <a href="{{ url_for('teacher.class_knowledge_graph') }}" class="nav-link {{ 'active' if request.path.startswith('/teacher/class_analysis/knowledge_graph') else '' }}">
+                <i class="bi bi-diagram-3"></i>
+                <span>知识图谱</span>
+            </a>
+            {% elif current_user.role == 'admin' %}
+            <a href="{{ url_for('admin.dashboard') }}" class="nav-link {{ 'active' if request.path.startswith('/admin/dashboard') else '' }}">
+                <i class="bi bi-speedometer2"></i>
+                <span>控制台</span>
+            </a>
+            <a href="{{ url_for('admin.user_list') }}" class="nav-link {{ 'active' if request.path.startswith('/admin/user') else '' }}">
+                <i class="bi bi-people"></i>
+                <span>用户管理</span>
+            </a>
+            <a href="{{ url_for('admin.knowledge_point_list') }}" class="nav-link {{ 'active' if request.path.startswith('/admin/knowledge') else '' }}">
+                <i class="bi bi-diagram-3"></i>
+                <span>知识点</span>
+            </a>
+            <a href="{{ url_for('admin.system_stats') }}" class="nav-link {{ 'active' if request.path.startswith('/admin/stats') and not request.path.startswith('/admin/stats/knowledge_graph') else '' }}">
+                <i class="bi bi-bar-chart"></i>
+                <span>系统统计</span>
+            </a>
+            <a href="{{ url_for('admin.admin_knowledge_graph') }}" class="nav-link {{ 'active' if request.path.startswith('/admin/stats/knowledge_graph') else '' }}">
+                <i class="bi bi-diagram-3"></i>
+                <span>知识图谱</span>
+            </a>
+            {% endif %}
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-profile" onclick="toggleUserMenu()">
+                <div class="user-avatar">{{ current_user.real_name[0] }}</div>
+                <div class="user-info">
+                    <div class="user-name">{{ current_user.real_name }}</div>
+                    <div class="user-role">{{ {'student': '学生', 'teacher': '教师', 'admin': '管理员'}[current_user.role] }}</div>
+                </div>
+                <i class="bi bi-chevron-right user-arrow"></i>
+            </div>
+            <div class="nav-divider"></div>
+            <a href="{{ url_for('auth.logout') }}" class="nav-link" style="padding: 10px 16px;">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>退出登录</span>
+            </a>
+        </div>
+    </aside>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="position-fixed top-4 end-4 p-3" style="z-index:9999; margin-left: var(--sidebar-width); transition: margin-left 0.3s;">
+        {% for category, message in messages %}
+        <div class="toast show align-items-center text-bg-{{ 'success' if category == 'success' else ('danger' if category == 'danger' else ('warning' if category == 'warning' else 'info')) }} border-0 mb-2 shadow-lg" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">{{ message }}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+{% else %}
+    {% block content_unauth %}{% endblock %}
+{% endif %}
+
+<script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/echarts_helper.js') }}"></script>
+{% if current_user.is_authenticated %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% endif %}
+<script>
+// ===== CSRF fetch 拦截器（必须最先执行）=====
+// 确保所有子页面的 fetch POST 请求在执行前就自动携带 X-CSRFToken 头
+(function() {
+    var csrfToken = document.querySelector('meta[name="csrf-token"]');
+    if (csrfToken) {
+        var originalFetch = window.fetch;
+        window.fetch = function(resource, options) {
+            options = options || {};
+            options.headers = options.headers || {};
+            if (!options.headers['X-CSRFToken']) {
+                options.headers['X-CSRFToken'] = csrfToken.content;
+            }
+            return originalFetch.call(this, resource, options);
+        };
+    }
+})();
+
+// ===== 全局基础脚本 =====
+document.addEventListener('DOMContentLoaded', function() {
+    const loader = document.getElementById('pageLoader');
+    if (loader) {
+        setTimeout(() => {
+            loader.classList.add('hidden');
+        }, 300);
+    }
+
+    document.querySelectorAll('.toast').forEach(el => {
+        setTimeout(() => { bootstrap.Toast.getOrCreateInstance(el).hide(); }, 4000);
+    });
+});
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('collapsed');
+}
+
+function toggleMobileSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.querySelector('.backdrop');
+    sidebar.classList.toggle('open');
+    backdrop.classList.toggle('show');
+}
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

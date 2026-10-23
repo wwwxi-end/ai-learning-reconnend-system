@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}前驱关系管理{% endblock %}
+{% block content %}
+<div class="row g-4">
+<div class="col-md-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-info text-white fw-bold">添加前驱关系</div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('teacher.create_prerequisite') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">前置知识点（先学）</label>
+                    <select class="form-select" name="prerequisite_kp_id" required>
+                        <option value="">-- 选择前置 --</option>
+                        {% for kp in kps %}
+                        <option value="{{ kp.id }}">[{{ kp.chapter or '-' }}] {{ kp.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">目标知识点（后学）</label>
+                    <select class="form-select" name="target_kp_id" required>
+                        <option value="">-- 选择目标 --</option>
+                        {% for kp in kps %}
+                        <option value="{{ kp.id }}">[{{ kp.chapter or '-' }}] {{ kp.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">关系类型</label>
+                    <select class="form-select" name="relation_type">
+                        <option value="must">必须前置（强依赖）</option>
+                        <option value="recommended">推荐前置（弱依赖）</option>
+                        <option value="related">相关（辅助）</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-info w-100 text-white">添加关系</button>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="col-md-8">
+    <div class="card shadow-sm">
+        <div class="card-header fw-bold">当前前驱关系列表（{{ prerequisites|length }} 条）</div>
+        <div class="table-responsive" style="max-height:500px;overflow-y:auto">
+            <table class="table table-hover align-middle mb-0 table-sm">
+                <thead class="table-light sticky-top"><tr><th>前置知识点</th><th>→</th><th>目标知识点</th><th>关系类型</th></tr></thead>
+                <tbody>
+                {% for p in prerequisites %}
+                <tr>
+                    <td><span class="badge bg-primary">{{ p.prerequisite_kp.name if p.prerequisite_kp else p.prerequisite_kp_id }}</span></td>
+                    <td><i class="bi bi-arrow-right text-muted"></i></td>
+                    <td><span class="badge bg-success">{{ p.target_kp.name if p.target_kp else p.target_kp_id }}</span></td>
+                    <td>
+                        <span class="badge bg-{{ 'danger' if p.relation_type=='must' else ('warning' if p.relation_type=='recommended' else 'secondary') }}">
+                            {{ {'must':'必须','recommended':'推荐','related':'相关'}[p.relation_type] }}
+                        </span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="text-center text-muted py-3">暂无前驱关系</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

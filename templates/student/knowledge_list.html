@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}知识点列表{% endblock %}
+{% block content %}
+
+<div class="course-card">
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{{ url_for('student.knowledge_list') }}"
+           class="btn btn-sm {{ 'btn-primary action-btn' if not current_chapter else 'btn-outline-gray' }}">全部</a>
+        {% for ch, _ in chapters %}
+        <a href="{{ url_for('student.knowledge_list', chapter=ch) }}"
+           class="btn btn-sm {{ 'btn-primary action-btn' if current_chapter == ch else 'btn-outline-gray' }}">{{ ch }}</a>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="space-y-3">
+{% for kp in kps %}
+{% set score = score_map.get(kp.id) %}
+<a href="{{ url_for('student.learn_kp', kp_id=kp.id) }}" class="text-decoration-none">
+    <div class="course-card hover-lift">
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center mb-2">
+                    <h5 class="font-weight-bold text-gray-800 mb-0">{{ kp.name }}</h5>
+                    {% if score is not none %}
+                    <span class="score-badge ml-2" style="background:{{ '#22c55e' if score >= 60 else ('#f59e0b' if score >= 40 else '#ef4444') }};color:white">
+                        {{ score|int }}分
+                    </span>
+                    {% else %}
+                    <span class="score-badge ml-2" style="background:#d9d9d9;color:#666">未学习</span>
+                    {% endif %}
+                </div>
+                <p class="text-sm text-gray-500 mb-3">{{ kp.description[:80] + '...' if kp.description and kp.description|length > 80 else (kp.description or '暂无描述') }}</p>
+                <div class="d-flex align-items-center gap-4 text-xs text-gray-400">
+                    <span><i class="bi bi-book-open me-1"></i>{{ kp.chapter or '-' }}</span>
+                    <span><i class="bi bi-clock me-1"></i>{{ kp.estimated_minutes }}分钟</span>
+                    <span>难度：
+                        {% for i in range(kp.difficulty) %}<i class="bi bi-star-fill text-warning"></i>{% endfor %}
+                        {% for i in range(5 - kp.difficulty) %}<i class="bi bi-star text-gray-300"></i>{% endfor %}
+                    </span>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background:{{ '#22c55e20' if score is not none and score >= 60 else ('#f59e0b20' if score is not none and score >= 40 else ('#ef444420' if score is not none else '#f1f5f9')) }}">
+                    <i class="bi {{ 'bi-check-circle text-success' if score is not none and score >= 60 else ('bi-clock text-warning' if score is not none and score >= 40 else ('bi-alert-circle text-danger' if score is not none else 'bi-book text-gray-400')) }}" style="font-size:20px"></i>
+                </div>
+            </div>
+        </div>
+        {% if score is not none %}
+        <div class="mt-4">
+            <div class="progress" style="height:6px;border-radius:3px">
+                <div class="progress-bar" style="width:{{ score }}%;background:{{ '#22c55e' if score >= 60 else ('#f59e0b' if score >= 40 else '#ef4444') }};transition:width 0.5s ease"></div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</a>
+{% else %}
+<div class="course-card text-center py-8">
+    <div class="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+        <i class="bi bi-inbox text-gray-400" style="font-size:2rem"></i>
+    </div>
+    <p class="text-gray-400">暂无知识点，请联系管理员添加</p>
+</div>
+{% endfor %}
+</div>
+
+{% endblock %}

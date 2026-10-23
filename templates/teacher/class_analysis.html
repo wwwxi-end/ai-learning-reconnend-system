@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% block title %}班级学习分析{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5><i class="bi bi-bar-chart-line me-2"></i>班级学习分析报告</h5>
+    <button class="btn btn-outline-primary btn-sm" onclick="getAIAdvice()">
+        <i class="bi bi-robot me-1"></i>获取AI教学建议
+    </button>
+</div>
+
+<!-- AI建议 -->
+<div id="aiArea" class="alert alert-primary d-none mb-4">
+    <h6><i class="bi bi-robot me-2"></i>AI 教学建议</h6>
+    <div id="aiText" style="white-space:pre-wrap"></div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header fw-bold">各知识点班级均分（由低到高）</div>
+            <div id="classChart" style="height:360px"></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header fw-bold">掌握情况分布</div>
+            <div id="piChart" style="height:360px"></div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header fw-bold">知识点详细数据</div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr><th>#</th><th>知识点</th><th>章节</th><th>均分</th><th>不及格率</th><th>参与人数</th></tr>
+            </thead>
+            <tbody>
+            {% for item in analysis %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td><strong>{{ item.kp_name }}</strong></td>
+                <td><small class="text-muted">{{ item.chapter or '-' }}</small></td>
+                <td>
+                    {% if item.avg_score is not none %}
+                    <span class="badge bg-{{ 'danger' if item.avg_score < 60 else ('warning' if item.avg_score < 75 else 'success') }}">
+                        {{ item.avg_score }}
+                    </span>
+                    {% else %}
+                    <span class="badge bg-gray">未学习</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="d-flex align-items-center gap-1">
+                        <div class="progress flex-grow-1" style="height:6px;min-width:60px">
+                            <div class="progress-bar bg-danger" style="width:{{ item.fail_rate }}%"></div>
+                        </div>
+                        <small>{{ item.fail_rate }}%</small>
+                    </div>
+                </td>
+                <td>{{ item.student_count }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center text-muted py-4">暂无数据</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+<script>
+const analysis = {{ analysis|tojson }};
+
+// 柱状图
+const bar = echarts.init(document.getElementById('classChart'));
+bar.setOption({
+    tooltip: { trigger: 'axis' },
+    grid: { bottom: '30%', containLabel: true },
+    xAxis: { type: 'category', data: analysis.map(d => d.kp_name.length>8 ? d.kp_name.slice(0,8)+'…' : d.kp_name),
+             axisLabel: { rotate: 45, fontSize: 10 } },
+    yAxis: { type: 'value', max: 100 },
+    series: [{
+        type: 'bar', barMaxWidth: 35,
+        data: analysis.map(d => {
+            if (d.avg_score === null || d.avg_score === undefined) {
+                return { value: 0, itemStyle: { color: '#d9d9d9' } };
+            }
+            return {
+                value: d.avg_score,
+                itemStyle: { color: d.avg_score<60?'#ff4d4f':(d.avg_score<75?'#faad14':'#52c41a') }
+            };
+        }),
+        label: { show: true, position: 'top', fontSize: 10, formatter: (params) => {
+            const val = params.value;
+            if (val === 0) return '-';
+            return Number.isInteger(val) ? val : val.toFixed(2);
+        }},
+        markLine: { data: [{yAxis:60, lineStyle:{color:'#ff4d4f',type:'dashed'}}] }
+    }]
+});
+
+// 饼图
+const mastered = analysis.filter(d => d.avg_score !== null && d.avg_score !== undefined && d.avg_score >= 60).length;
+const partial = analysis.filter(d => d.avg_score !== null && d.avg_score !== undefined && d.avg_score >= 40 && d.avg_score < 60).length;
+const weak = analysis.filter(d => d.avg_score !== null && d.avg_score !== undefined && d.avg_score < 40).length;
+const pie = echarts.init(document.getElementById('piChart'));
+pie.setOption({
+    tooltip: { trigger: 'item', formatter: '{b}: {c}个 ({d}%)' },
+    legend: { bottom: 0 },
+    series: [{
+        type: 'pie', radius: ['40%','70%'],
+        data: [
+            {value: mastered, name: '良好(≥60)', itemStyle:{color:'#52c41a'}},
+            {value: partial, name: '一般(40-60)', itemStyle:{color:'#faad14'}},
+            {value: weak, name: '薄弱(<40)', itemStyle:{color:'#ff4d4f'}}
+        ]
+    }]
+});
+window.addEventListener('resize', () => { bar.resize(); pie.resize(); });
+
+async function getAIAdvice() {
+    document.getElementById('aiArea').classList.remove('d-none');
+    document.getElementById('aiText').innerText = '正在分析，请稍候...';
+    const resp = await fetch('/teacher/class_analysis/ai_advice');
+    const data = await resp.json();
+    document.getElementById('aiText').innerText = data.advice;
+}
+</script>
+{% endblock %}

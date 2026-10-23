@@ -1,0 +1,270 @@
+{% extends 'base.html' %}
+{% block title %}智能问答{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-md-8">
+        <div class="course-card" style="padding:0;overflow:hidden;height:calc(100vh - 200px);display:flex;flex-direction:column">
+            <div class="bg-gradient-to-r from-primary to-primary-light px-5 py-4 text-white">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-white/20 rounded-full p-2">
+                        <i class="bi bi-chat-dots" style="font-size:1.2rem"></i>
+                    </div>
+                    <div>
+                        <h5 class="font-weight-bold mb-0">智能学习助手</h5>
+                        <p class="text-white/80 text-sm">基于知识图谱的个性化学习建议</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 space-y-4" id="chatArea" style="background:#f8fafc">
+                <div class="d-flex items-start gap-3">
+                    <div class="bg-primary rounded-full p-2.5 flex-shrink-0">
+                        <i class="bi bi-chat-dots text-white" style="font-size:1rem"></i>
+                    </div>
+                    <div class="bg-white rounded-xl rounded-tl-none p-4 shadow-sm max-w-[85%]">
+                        <p class="text-gray-700 mb-3">你好！我是计算机组成原理AI助手</p>
+                        <div class="space-y-2 text-sm text-gray-600">
+                            <div class="flex items-center gap-2">
+                                <i class="bi bi-lightbulb text-primary" style="font-size:0.8rem"></i>
+                                <span>我想学<strong class="text-primary">流水线技术</strong>，需要先学什么？</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <i class="bi bi-lightbulb text-primary" style="font-size:0.8rem"></i>
+                                <span>帮我分析我的学习薄弱点</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <i class="bi bi-lightbulb text-primary" style="font-size:0.8rem"></i>
+                                <span>指令系统和存储器哪个更重要？</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <i class="bi bi-lightbulb text-primary" style="font-size:0.8rem"></i>
+                                <span>如何提高Cache相关知识的掌握程度？</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if question %}
+                <div class="flex items-start gap-3 justify-end">
+                    <div class="bg-primary text-white rounded-xl rounded-tr-none p-4 shadow-sm max-w-[85%]">
+                        {{ question }}
+                    </div>
+                    <div class="bg-gray-200 rounded-full p-2.5 flex-shrink-0">
+                        <i class="bi bi-person text-gray-600" style="font-size:1rem"></i>
+                    </div>
+                </div>
+
+                <div class="d-flex items-start gap-3">
+                    <div class="bg-primary rounded-full p-2.5 flex-shrink-0">
+                        <i class="bi bi-chat-dots text-white" style="font-size:1rem"></i>
+                    </div>
+                    <div class="bg-white rounded-xl rounded-tl-none p-4 shadow-sm max-w-[85%]">
+                        <div class="text-gray-700 whitespace-pre-wrap">{{ answer }}</div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="bg-white p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+                <form id="qaForm" class="d-flex gap-3">
+                    <div class="flex-1 relative">
+                        <input type="text" class="form-control w-full px-4 py-3 pr-12 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                               name="question" placeholder="输入你的问题，如：我想学流水线技术，需要先学什么？"
+                               value="{{ question }}" autofocus required>
+                        <button type="button" id="clearBtn" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
+                    </div>
+                    <button type="submit" class="btn btn-primary action-btn px-6 py-3" id="submitBtn">
+                        <i class="bi bi-send me-1"></i>
+                        <span class="d-none d-md-inline">发送</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="course-card" style="height:calc(100vh - 200px);overflow-y:auto">
+            <h5 class="font-weight-bold text-gray-800 mb-3 px-4 pt-4"><i class="bi bi-lightning text-warning me-2"></i>快速提问</h5>
+            <div class="px-4 pb-4">
+                <div class="space-y-2">
+                    {% set quick_questions = [
+                        '我想学流水线技术，需要先学什么？',
+                        '帮我分析我的学习薄弱点',
+                        '计算机组成原理最重要的知识点是什么？',
+                        '如何提高存储器相关知识的掌握程度？',
+                        '我该按什么顺序学习这门课？'
+                    ] %}
+                    {% for q in quick_questions %}
+                    <button type="button" class="btn btn-outline-gray w-full text-left py-3 px-4 rounded-xl hover:bg-primary/5 hover:border-primary hover:text-primary transition-all quick-q" data-q="{{ q }}">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-primary/10 text-primary rounded-full p-1.5 flex-shrink-0">
+                                <i class="bi bi-arrow-right" style="font-size:0.75rem"></i>
+                            </div>
+                            <span class="text-sm">{{ q }}</span>
+                        </div>
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="border-t border-gray-100 px-4 py-4 bg-gray-50">
+                <h6 class="font-medium text-gray-700 mb-3"><i class="bi bi-info-circle text-primary me-1"></i>功能说明</h6>
+                <ul class="space-y-2 text-sm text-gray-500">
+                    <li class="flex items-center gap-2">
+                        <i class="bi bi-check-circle text-success" style="font-size:0.75rem"></i>支持自然语言提问
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <i class="bi bi-check-circle text-success" style="font-size:0.75rem"></i>AI自主分析学习数据
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <i class="bi bi-check-circle text-success" style="font-size:0.75rem"></i>自动查询知识图谱关系
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <i class="bi bi-check-circle text-success" style="font-size:0.75rem"></i>基于薄弱点智能推荐
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <i class="bi bi-check-circle text-success" style="font-size:0.75rem"></i>响应时间约5-15秒
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+.typing-indicator {
+    display: inline-flex;
+    gap: 6px;
+}
+.typing-indicator span {
+    width: 8px;
+    height: 8px;
+    background-color: #94a3b8;
+    border-radius: 50%;
+    animation: bounce 1.4s infinite ease-in-out both;
+}
+.typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+.typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+@keyframes bounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+}
+</style>
+<script>
+function initQA() {
+    const chatArea = document.getElementById('chatArea');
+    const qaForm = document.getElementById('qaForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const input = document.querySelector('input[name=question]');
+    const clearBtn = document.getElementById('clearBtn');
+
+    if (!chatArea || !qaForm || !submitBtn || !input || !clearBtn) return;
+
+    document.querySelectorAll('.quick-q').forEach(btn => {
+        btn.addEventListener('click', () => {
+            input.value = btn.dataset.q;
+            clearBtn.classList.remove('hidden');
+            qaForm.dispatchEvent(new Event('submit'));
+        });
+    });
+
+    input.addEventListener('input', () => {
+        clearBtn.classList.toggle('hidden', !input.value.trim());
+    });
+
+    clearBtn.addEventListener('click', () => {
+        input.value = '';
+        clearBtn.classList.add('hidden');
+        input.focus();
+    });
+
+    qaForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const question = input.value.trim();
+    if (!question) return;
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>思考中...`;
+    input.disabled = true;
+
+    const userMsgDiv = document.createElement('div');
+    userMsgDiv.className = 'flex items-start gap-3 justify-end';
+    userMsgDiv.innerHTML = `
+        <div class="bg-primary text-white rounded-xl rounded-tr-none p-4 shadow-sm max-w-[85%]">${question}</div>
+        <div class="bg-gray-200 rounded-full p-2.5 flex-shrink-0"><i class="bi bi-person text-gray-600" style="font-size:1rem"></i></div>
+    `;
+    chatArea.appendChild(userMsgDiv);
+
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'flex items-start gap-3';
+    loadingDiv.innerHTML = `
+        <div class="bg-primary rounded-full p-2.5 flex-shrink-0"><i class="bi bi-chat-dots text-white" style="font-size:1rem"></i></div>
+        <div class="bg-white rounded-xl rounded-tl-none p-4 shadow-sm">
+            <div class="typing-indicator"><span></span><span></span><span></span></div>
+        </div>
+    `;
+    chatArea.appendChild(loadingDiv);
+    chatArea.scrollTop = chatArea.scrollHeight;
+
+    try {
+        const resp = await fetch('/student/qa/ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question })
+        });
+        const result = await resp.json();
+
+        chatArea.removeChild(loadingDiv);
+
+        if (result.success) {
+            const aiMsgDiv = document.createElement('div');
+            aiMsgDiv.className = 'flex items-start gap-3';
+            aiMsgDiv.innerHTML = `
+                <div class="bg-primary rounded-full p-2.5 flex-shrink-0"><i class="bi bi-chat-dots text-white" style="font-size:1rem"></i></div>
+                <div class="bg-white rounded-xl rounded-tl-none p-4 shadow-sm max-w-[85%]">
+                    <div class="text-gray-700 whitespace-pre-wrap">${result.answer}</div>
+                </div>
+            `;
+            chatArea.appendChild(aiMsgDiv);
+        } else {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'flex items-start gap-3';
+            errorDiv.innerHTML = `
+                <div class="bg-danger rounded-full p-2.5 flex-shrink-0"><i class="bi bi-exclamation-circle text-white" style="font-size:1rem"></i></div>
+                <div class="bg-red-50 text-red-600 rounded-xl rounded-tl-none p-4 shadow-sm">
+                    <p>抱歉，处理您的问题时出现错误：${result.error || '未知错误'}</p>
+                </div>
+            `;
+            chatArea.appendChild(errorDiv);
+        }
+    } catch (e) {
+        chatArea.removeChild(loadingDiv);
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'flex items-start gap-3';
+        errorDiv.innerHTML = `
+            <div class="bg-danger rounded-full p-2.5 flex-shrink-0"><i class="bi bi-exclamation-circle text-white" style="font-size:1rem"></i></div>
+            <div class="bg-red-50 text-red-600 rounded-xl rounded-tl-none p-4 shadow-sm">
+                <p>网络连接异常，请稍后重试</p>
+            </div>
+        `;
+        chatArea.appendChild(errorDiv);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-send me-1"></i><span class="d-none d-md-inline">发送</span>';
+        input.disabled = false;
+        input.value = '';
+        clearBtn.classList.add('hidden');
+        input.focus();
+        chatArea.scrollTop = chatArea.scrollHeight;
+    }
+});
+}
+
+document.addEventListener('DOMContentLoaded', initQA);
+</script>
+{% endblock %}

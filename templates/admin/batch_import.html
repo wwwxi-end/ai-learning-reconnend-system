@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}批量导入用户{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-md-7">
+<div class="card shadow-sm">
+    <div class="card-header bg-secondary text-white"><h5 class="mb-0">批量导入用户（CSV）</h5></div>
+    <div class="card-body">
+        <div class="alert alert-info">
+            <strong>CSV格式要求：</strong><br>
+            必填列：<code>username,real_name,role,password</code><br>
+            可选列：<code>student_id,teacher_id,email,department,course_group</code><br>
+            role取值：<code>student / teacher / admin</code>
+        </div>
+        <a href="#" class="btn btn-outline-secondary btn-sm mb-3" onclick="downloadTemplate()">
+            <i class="bi bi-download me-1"></i>下载CSV模板
+        </a>
+        <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-3">
+                <label class="form-label fw-semibold">选择CSV文件</label>
+                <input type="file" class="form-control" name="csv_file" accept=".csv" required>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-upload me-1"></i>开始导入</button>
+                <a href="{{ url_for('admin.user_list') }}" class="btn btn-outline-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function downloadTemplate() {
+    const csv = 'username,real_name,role,password,student_id,teacher_id,email,department\nstudent001,张三,student,123456,20210001,,zhangsan@school.edu,计算机学院\nteacher001,李老师,teacher,123456,,T001,lisi@school.edu,计算机学院\n';
+    const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'user_import_template.csv'; a.click();
+}
+</script>
+{% endblock %}

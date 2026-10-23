@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% block title %}学习计划{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h5 class="font-weight-bold text-gray-800"><i class="bi bi-file-earmark-text text-primary me-2"></i>个性化学习计划</h5>
+    <a href="{{ url_for('student.export_pdf') }}" class="btn btn-danger action-btn" id="exportBtn">
+        <i class="bi bi-file-earmark-pdf me-1"></i>导出PDF
+    </a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="stat-card">
+            <div class="num text-primary">{{ student_data.avg_score if (student_data.avg_score and student_data.avg_score|int == student_data.avg_score) else ('%.2f'|format(student_data.avg_score)) if student_data.avg_score else '0.00' }}</div>
+            <div class="label">当前均分</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card">
+            <div class="num text-success">{{ student_data.studied_count }}</div>
+            <div class="label">已学知识点</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card" style="background:#fee2e2">
+            <div class="num text-danger">{{ student_data.weak_count }}</div>
+            <div class="label">薄弱知识点</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card" style="background:#fef3c7">
+            <div class="num text-warning">{{ '%.0f'|format(student_data.progress) }}%</div>
+            <div class="label">课程完成度</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-5">
+        <div class="course-card">
+            <h5 class="font-weight-bold text-gray-800 mb-3"><i class="bi bi-list-ol text-primary me-2"></i>推荐学习顺序（Top-5）</h5>
+            <div class="space-y-3">
+            {% for rec in recommendations %}
+            <div class="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="badge rounded-circle flex-shrink-0" style="width:28px;height:28px;font-size:0.85rem;display:flex;align-items:center;justify-content:center;background:{{ '#ef4444' if rec.rank == 1 else ('#f59e0b' if rec.rank <= 3 else '#94a3b8') }};color:white">
+                        {{ rec.rank }}
+                    </span>
+                    <div class="flex-grow-1">
+                        <div class="font-medium text-gray-800">{{ rec.kp_name }}</div>
+                        <div class="text-xs text-gray-400 mt-1">{{ rec.kp_chapter }} · {{ rec.estimated_minutes }}分钟</div>
+                    </div>
+                    {% if rec.current_score is not none %}
+                    <span class="score-badge" style="background:{{ '#22c55e' if rec.current_score >= 60 else ('#f59e0b' if rec.current_score >= 40 else '#ef4444') }};color:white">
+                        {{ rec.current_score|int }}分
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="mt-2 flex flex-wrap gap-1">
+                    {% for tag in rec.reason_tags|from_json %}
+                    <span class="text-xs bg-white text-gray-600 px-2 py-0.5 rounded-full border border-gray-200">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+                <a href="{{ url_for('student.learn_kp', kp_id=rec.kp_id) }}" class="btn btn-primary action-btn mt-3 w-full py-2">开始学习</a>
+            </div>
+            {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-7">
+        <div class="course-card">
+            <h5 class="font-weight-bold text-gray-800 mb-3"><i class="bi bi-robot text-primary me-2"></i>AI 生成学习计划</h5>
+            <div id="planContentContainer">
+                <div id="planLoading" class="bg-gray-50 rounded-xl p-6 text-center">
+                    <div class="w-12 h-12 mx-auto mb-3 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                    <p class="text-gray-500 text-sm">AI 正在为您生成个性化学习计划...</p>
+                    <p class="text-gray-400 text-xs mt-2">预计需要 2-10 秒</p>
+                </div>
+                <div id="planContent" class="d-none bg-gray-50 rounded-xl p-4" style="white-space:pre-wrap;font-size:0.9rem;max-height:600px;overflow-y:auto"></div>
+                <div id="planError" class="d-none bg-red-50 rounded-xl p-6 text-center">
+                    <i class="bi bi-exclamation-circle text-red-500 mb-2" style="font-size:2rem"></i>
+                    <p class="text-red-500 text-sm">生成失败，请点击下方按钮重试</p>
+                    <button class="btn btn-primary action-btn mt-3" onclick="generatePlan()">重新生成</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function initPlanPage() {
+    const exportBtn = document.getElementById('exportBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', async function(e) {
+            const btn = this;
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>生成中...';
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch('/student/plan/export_pdf');
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `学习计划_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    alert('导出失败，请稍后重试');
+                }
+            } catch (error) {
+                console.error('导出失败:', error);
+                alert('导出失败，请稍后重试');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+    }
+
+    generatePlan();
+}
+
+function generatePlan(retryCount = 0) {
+    const loadingEl = document.getElementById('planLoading');
+    const contentEl = document.getElementById('planContent');
+    const errorEl = document.getElementById('planError');
+    const maxRetries = 2;
+    const timeoutMs = 30000;
+    
+    if (!loadingEl || !contentEl || !errorEl) return;
+    
+    loadingEl.classList.remove('d-none');
+    contentEl.classList.add('d-none');
+    errorEl.classList.add('d-none');
+    
+    if (retryCount > 0) {
+        const loadingText = loadingEl.querySelector('p');
+        if (loadingText) {
+            loadingText.textContent = `AI 正在为您生成个性化学习计划（第${retryCount + 1}次尝试）...`;
+        }
+    }
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+        controller.abort();
+    }, timeoutMs);
+    
+    fetch('/student/plan/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal
+    })
+    .then(response => {
+        clearTimeout(timeoutId);
+        if (!response.ok) {
+            throw new Error('服务器返回错误: ' + response.status);
+        }
+        return response.json();
+    })
+    .then(data => {
+        loadingEl.classList.add('d-none');
+        if (data.plan_content) {
+            contentEl.textContent = data.plan_content;
+            contentEl.classList.remove('d-none');
+        } else if (data.error) {
+            if (retryCount < maxRetries) {
+                setTimeout(() => generatePlan(retryCount + 1), 1500);
+            } else {
+                errorEl.querySelector('p').textContent = '生成失败: ' + data.error;
+                errorEl.classList.remove('d-none');
+            }
+        } else {
+            errorEl.classList.remove('d-none');
+        }
+    })
+    .catch(error => {
+        clearTimeout(timeoutId);
+        console.error('生成计划失败:', error);
+        
+        if (error.name === 'AbortError') {
+            if (retryCount < maxRetries) {
+                setTimeout(() => generatePlan(retryCount + 1), 2000);
+            } else {
+                loadingEl.classList.add('d-none');
+                errorEl.querySelector('p').textContent = 'AI 生成超时，已重试多次仍失败，请点击下方按钮重试';
+                errorEl.classList.remove('d-none');
+            }
+        } else {
+            if (retryCount < maxRetries) {
+                setTimeout(() => generatePlan(retryCount + 1), 1500);
+            } else {
+                loadingEl.classList.add('d-none');
+                errorEl.querySelector('p').textContent = '生成失败: ' + error.message + '，已重试多次仍失败，请点击下方按钮重试';
+                errorEl.classList.remove('d-none');
+            }
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', initPlanPage);
+</script>
+{% endblock %}

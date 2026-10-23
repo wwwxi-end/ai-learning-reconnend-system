@@ -1,0 +1,529 @@
+{% extends 'base.html' %}
+{% block title %}学习 - {{ kp.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <a href="{{ url_for('student.knowledge_list') }}" class="text-gray-600 hover:text-primary transition-colors">
+        <i class="bi bi-arrow-left me-1"></i>返回课程列表
+    </a>
+    <span class="text-sm text-gray-500">{{ kp.chapter or '' }}</span>
+    {% if best_score is not none %}
+    <span class="score-badge" style="background:{{ '#22c55e' if best_score >= 60 else ('#f59e0b' if best_score >= 40 else '#ef4444') }};color:white">
+        {{ best_score|int }}分
+    </span>
+    {% endif %}
+</div>
+
+<div class="course-card fade-in">
+    <div class="d-flex justify-content-between align-items-start">
+        <div class="flex-grow-1">
+            <h5 class="font-weight-bold text-gray-800">{{ kp.name }}</h5>
+            <p class="text-sm text-gray-500 mt-2">{{ kp.description or '暂无描述' }}</p>
+            <div class="flex flex-wrap gap-2 mt-3">
+                <span class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">难度 {% for i in range(kp.difficulty) %}★{% endfor %}</span>
+                <span class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">预计 {{ kp.estimated_minutes }}分钟</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="course-card fade-in" style="animation-delay: 0.1s;">
+    <h5 class="font-weight-bold text-gray-800 mb-4">知识关联</h5>
+    <div class="row">
+        {% if prereqs %}
+        <div class="col-6">
+            <div class="text-xs text-gray-400 mb-2"><i class="bi bi-arrow-up-circle text-info me-1"></i>前置知识</div>
+            <div class="space-y-2">
+                {% for p in prereqs %}
+                <a href="{{ url_for('student.learn_kp', kp_id=p.id) }}" class="d-block text-sm text-gray-600 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                    {{ p.name }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% if successors %}
+        <div class="col-6">
+            <div class="text-xs text-gray-400 mb-2"><i class="bi bi-arrow-down-circle text-success me-1"></i>后续知识</div>
+            <div class="space-y-2">
+                {% for s in successors %}
+                <a href="{{ url_for('student.learn_kp', kp_id=s.id) }}" class="d-block text-sm text-gray-600 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                    {{ s.name }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<ul class="nav nav-tabs mb-4 bg-white rounded-xl p-1">
+    <li class="nav-item flex-1 text-center">
+        <a class="nav-link active rounded-lg py-2 text-sm font-medium" data-bs-toggle="tab" href="#materials">
+            <i class="bi bi-collection-play me-1"></i>学习材料（{{ materials|length }}）
+        </a>
+    </li>
+    <li class="nav-item flex-1 text-center">
+        <a class="nav-link rounded-lg py-2 text-sm font-medium" data-bs-toggle="tab" href="#quiz" id="quizTab">
+            <i class="bi bi-patch-question me-1"></i>知识点测验（{{ questions|length }}题）
+        </a>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <div class="tab-pane fade show active" id="materials">
+        {% if materials %}
+        <div class="space-y-4">
+        {% for m in materials %}
+        <div class="course-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center">
+                    <span class="score-badge mr-2" style="background:{{ '#ef4444' if m.material_type == 'video' else '#3b82f6' }};color:white">
+                        {{ {'video':'视频','text':'文本','pdf':'PDF'}.get(m.material_type, '材料') }}
+                    </span>
+                    <span class="font-medium text-gray-800">{{ m.title }}</span>
+                </div>
+                {% if m.description %}
+                <button class="btn btn-sm btn-outline-gray" data-bs-toggle="collapse" data-bs-target="#desc{{ m.id }}">
+                    <i class="bi bi-info-circle"></i>
+                </button>
+                {% endif %}
+            </div>
+            
+            {% if m.material_type == 'video' %}
+            {% if m.external_url %}
+            <div class="relative rounded-xl overflow-hidden shadow-lg">
+                <div class="aspect-video bg-gray-900" id="videoContainer{{ m.id }}" 
+                     data-material-id="{{ m.id }}" data-external-url="{{ m.external_url }}">
+                    <iframe id="iframe{{ m.id }}" src="" 
+                            class="w-full h-full" frameborder="0" allowfullscreen
+                            onload="recordMaterialView({{ m.id }})"></iframe>
+                </div>
+                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                    <div class="text-white/80 text-xs">点击播放开始学习，进度将自动保存</div>
+                </div>
+            </div>
+            {% elif m.file_path %}
+            <div class="relative rounded-xl overflow-hidden shadow-lg">
+                <video controls class="w-full" style="max-height:400px"
+                       id="video{{ m.id }}" data-material-id="{{ m.id }}"
+                       onclick="recordMaterialView({{ m.id }})">
+                    <source src="/uploads/{{ m.file_path }}" type="video/mp4">
+                    你的浏览器不支持视频播放
+                </video>
+                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                    <div class="text-white/80 text-xs">点击播放开始学习，进度将自动保存</div>
+                </div>
+            </div>
+            {% endif %}
+            {% elif m.material_type == 'text' %}
+            <div class="p-4 bg-gray-50 rounded-xl" style="white-space:pre-wrap;font-size:0.9rem;max-height:400px;overflow-y:auto"
+                 data-material-id="{{ m.id }}" onclick="recordMaterialView({{ m.id }})">
+                {{ m.content or '（无内容）' }}
+            </div>
+            {% elif m.material_type == 'pdf' %}
+            {% if m.external_url %}
+            <a href="{{ m.external_url }}" target="_blank" class="btn btn-primary action-btn w-full py-4 flex items-center justify-center gap-2"
+               onclick="recordMaterialView({{ m.id }})">
+                <i class="bi bi-external-link" style="font-size:1.5rem"></i>
+                <span>打开在线文档</span>
+            </a>
+            {% elif m.file_path %}
+            <a href="/uploads/{{ m.file_path }}" target="_blank" class="btn btn-primary action-btn w-full py-4 flex items-center justify-center gap-2"
+               onclick="recordMaterialView({{ m.id }})">
+                <i class="bi bi-file-earmark-pdf" style="font-size:1.5rem"></i>
+                <span>打开PDF文档</span>
+            </a>
+            {% endif %}
+            {% endif %}
+            
+            {% if m.description %}
+            <div id="desc{{ m.id }}" class="collapse mt-3">
+                <p class="text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">{{ m.description }}</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+        </div>
+        {% else %}
+        <div class="course-card text-center py-10">
+            <div class="w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                <i class="bi bi-inbox" style="font-size:3rem;color:#94a3b8"></i>
+            </div>
+            <p class="text-gray-400">暂无学习材料，老师正在准备中...</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="tab-pane fade" id="quiz">
+        {% if questions %}
+        <form id="quizForm">
+            {% for q in questions %}
+            <div class="course-card">
+                <div class="d-flex align-items-center mb-3">
+                    <span class="score-badge mr-2" style="background:#3b82f6;color:white">{{ loop.index }}</span>
+                    <span class="font-medium text-gray-800">{{ q.question_text }}</span>
+                </div>
+                
+                {% if q.question_type in ('single', 'multiple') %}
+                <div class="space-y-2">
+                    {% for opt_key, opt_text in [('A', q.option_a), ('B', q.option_b), ('C', q.option_c), ('D', q.option_d)] %}
+                    {% if opt_text %}
+                    <label class="d-flex align-items-center gap-3 p-4 border border-gray-200 rounded-xl cursor-pointer opt-item transition-all"
+                           data-qid="{{ q.id }}" data-opt="{{ opt_key }}">
+                        <input type="{{ 'radio' if q.question_type == 'single' else 'checkbox' }}"
+                               name="q_{{ q.id }}" value="{{ opt_key }}" class="form-check-input mt-0" style="width:18px;height:18px">
+                        <span class="text-sm"><strong>{{ opt_key }}.</strong> {{ opt_text }}</span>
+                    </label>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% elif q.question_type == 'truefalse' %}
+                <div class="flex gap-3">
+                    <label class="flex-1 p-4 border border-gray-200 rounded-xl text-center cursor-pointer transition-all">
+                        <input type="radio" name="q_{{ q.id }}" value="T" class="form-check-input me-2">正确
+                    </label>
+                    <label class="flex-1 p-4 border border-gray-200 rounded-xl text-center cursor-pointer transition-all">
+                        <input type="radio" name="q_{{ q.id }}" value="F" class="form-check-input me-2">错误
+                    </label>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            
+            <div class="mt-4">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="needAiExplanation" class="form-check-input" style="width:18px;height:18px">
+                    <span class="text-sm text-gray-600"><i class="bi bi-robot me-1"></i>提交后需要AI智能讲解</span>
+                </label>
+                <button type="button" class="btn btn-primary action-btn w-full py-3 mt-3" onclick="submitQuiz()">
+                    <i class="bi bi-check2-circle me-2"></i>提交答案
+                </button>
+            </div>
+        </form>
+        
+        <div id="quizResult" class="d-none mt-4"></div>
+        {% else %}
+        <div class="course-card text-center py-10">
+            <div class="w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                <i class="bi bi-patch-question" style="font-size:3rem;color:#94a3b8"></i>
+            </div>
+            <p class="text-gray-400">该知识点暂无测验题目</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if history %}
+<div class="course-card mt-4 fade-in" style="animation-delay: 0.2s;">
+    <h5 class="font-weight-bold text-gray-800 mb-3">历史成绩</h5>
+    <div class="space-y-2">
+        {% for h in history[:5] %}
+        <div class="d-flex justify-content-between align-items-center p-3 bg-gray-50 rounded-xl">
+            <span class="text-xs text-gray-400">{{ h.created_at.strftime('%m-%d %H:%M') if h.created_at else '-' }}</span>
+            {% if h.quiz_score is not none %}
+            <span class="score-badge" style="background:{{ '#22c55e' if h.quiz_score >= 60 else ('#f59e0b' if h.quiz_score >= 40 else '#ef4444') }};color:white">
+                {{ h.quiz_score|int }}分
+            </span>
+            {% else %}
+            <span class="text-xs text-gray-400">未测验</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<style>
+.btn-outline-gray {
+    border-color: #e2e8f0;
+    color: #64748b;
+}
+.btn-outline-gray:hover {
+    background-color: #f8fafc;
+}
+</style>
+<script>
+const kpId = {{ kp.id }};
+const sessionId = {{ session_id }};
+let startTime = Date.now();
+let quizStartTime = Date.now();
+let materialViews = new Set();
+let progressInterval = null;
+let videoProgressMap = {};
+let textReadStartTimes = {};
+let watchedDurations = {};
+
+function parseVideoUrl(url) {
+    if (!url) return '';
+    url = url.trim();
+    
+    let match;
+    
+    match = url.match(/bilibili\.com\/video\/([a-zA-Z0-9]+)/);
+    if (match) return `https://player.bilibili.com/player.html?aid=&cid=&bvid=${match[1]}&page=1`;
+    
+    match = url.match(/bilibili\.com\/av(\d+)/);
+    if (match) return `https://player.bilibili.com/player.html?aid=${match[1]}&cid=&page=1`;
+    
+    match = url.match(/v\.qq\.com\/x\/cover\/\w+\/(\w+)\.html/);
+    if (match) return `https://v.qq.com/txp/iframe/player.html?vid=${match[1]}`;
+    
+    match = url.match(/v\.qq\.com\/x\/page\/(\w+)\.html/);
+    if (match) return `https://v.qq.com/txp/iframe/player.html?vid=${match[1]}`;
+    
+    match = url.match(/youku\.com\/v_show\/id_(\w+)\.html/);
+    if (match) return `https://player.youku.com/embed/${match[1]}`;
+    
+    match = url.match(/iqiyi\.com\/v_(\w+)\.html/);
+    if (match) return url.replace('iqiyi.com/v_', 'open.iqiyi.com/developer/player/coopPlayerIndex.html?vid=');
+    
+    return url;
+}
+
+function initLearnPage() {
+    startTime = Date.now();
+    quizStartTime = Date.now();
+    materialViews = new Set();
+    progressInterval = null;
+    videoProgressMap = {};
+    textReadStartTimes = {};
+    watchedDurations = {};
+
+    document.querySelectorAll('[id^="videoContainer"]').forEach(container => {
+        const iframe = container.querySelector('iframe');
+        const url = container.dataset.externalUrl;
+        if (iframe && url) {
+            iframe.src = parseVideoUrl(url);
+        }
+    });
+
+    document.querySelectorAll('video').forEach(video => {
+        const materialId = video.dataset.materialId;
+        videoProgressMap[materialId] = 0;
+        watchedDurations[materialId] = 0;
+        
+        video.addEventListener('play', () => {
+            recordMaterialView(materialId);
+            progressInterval = setInterval(() => {
+                if (!video.paused && video.duration) {
+                    videoProgressMap[materialId] = Math.round((video.currentTime / video.duration) * 100);
+                    watchedDurations[materialId] += 10;
+                    saveProgress();
+                }
+            }, 10000);
+        });
+        
+        video.addEventListener('pause', () => {
+            if (progressInterval) { clearInterval(progressInterval); }
+            saveProgress();
+        });
+        
+        video.addEventListener('ended', () => {
+            if (progressInterval) { clearInterval(progressInterval); }
+            videoProgressMap[materialId] = 100;
+            saveProgress();
+        });
+    });
+
+    document.querySelectorAll('[data-material-id]').forEach(el => {
+        const materialId = el.dataset.materialId;
+        if (!textReadStartTimes[materialId]) {
+            textReadStartTimes[materialId] = Date.now();
+        }
+    });
+
+    document.querySelectorAll('.opt-item').forEach(label => {
+        label.addEventListener('click', () => {
+            const qid = label.dataset.qid;
+            const type = label.querySelector('input').type;
+            if (type === 'radio') {
+                document.querySelectorAll(`[data-qid="${qid}"]`).forEach(l => l.classList.remove('border-primary', 'bg-primary', 'bg-opacity-10'));
+                label.classList.add('border-primary', 'bg-primary', 'bg-opacity-10');
+            } else {
+                label.classList.toggle('border-primary');
+                label.classList.toggle('bg-primary');
+                label.classList.toggle('bg-opacity-10');
+            }
+        });
+    });
+
+    const quizTab = document.getElementById('quizTab');
+    if (quizTab) {
+        quizTab.addEventListener('click', () => { quizStartTime = Date.now(); });
+    }
+}
+
+async function recordMaterialView(materialId) {
+    if (materialViews.has(materialId)) return;
+    materialViews.add(materialId);
+    try {
+        await fetch(`/api/material/view/${materialId}`, { method: 'POST' });
+    } catch (e) {
+        console.log('Failed to record view');
+    }
+}
+
+function saveProgress() {
+    const duration = Math.round((Date.now() - startTime) / 1000);
+    if (duration > 10) {
+        const maxVideoProgress = Math.max(...Object.values(videoProgressMap), 0);
+        const totalWatched = Object.values(watchedDurations).reduce((a, b) => a + b, 0);
+        
+        let textProgress = 0;
+        let textReadDuration = 0;
+        for (const [mid, start] of Object.entries(textReadStartTimes)) {
+            textReadDuration += Math.round((Date.now() - start) / 1000);
+            textProgress = Math.min(100, textReadDuration / 300 * 100);
+        }
+        
+        try {
+            fetch('/api/record_progress', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    kp_id: kpId, 
+                    study_duration: duration, 
+                    progress_percent: maxVideoProgress,
+                    video_progress: maxVideoProgress,
+                    watched_duration: totalWatched,
+                    text_progress: Math.round(textProgress),
+                    text_read_duration: textReadDuration
+                })
+            });
+        } catch (e) {
+            console.log('Failed to save progress');
+        }
+        startTime = Date.now();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', initLearnPage);
+
+async function submitQuiz() {
+    const answers = {};
+    document.querySelectorAll('#quizForm input:checked').forEach(inp => {
+        const qid = inp.name.replace('q_', '');
+        if (!answers[qid]) answers[qid] = '';
+        if (inp.type === 'checkbox') answers[qid] += inp.value;
+        else answers[qid] = inp.value;
+    });
+
+    if (Object.keys(answers).length === 0) {
+        alert('请至少回答一道题目');
+        return;
+    }
+
+    const needAiExplanation = document.getElementById('needAiExplanation').checked;
+    const timeSpent = Math.round((Date.now() - quizStartTime) / 1000);
+    
+    const btn = document.querySelector('#quizForm button');
+    btn.disabled = true;
+    btn.innerHTML = needAiExplanation ? '<i class="bi bi-robot me-2"></i>提交中，AI分析中...' : '<i class="bi bi-check2-circle me-2"></i>提交中...';
+
+    const resp = await fetch(`/student/learn/${kpId}/submit_quiz`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ answers, time_spent: timeSpent, need_ai_explanation: needAiExplanation })
+    });
+    const result = await resp.json();
+    if (result.error) { alert(result.error); btn.disabled = false; btn.textContent = '提交答案'; return; }
+
+    const resultDiv = document.getElementById('quizResult');
+    resultDiv.classList.remove('d-none');
+    const scoreColor = result.passed ? '#22c55e' : (result.score >= 40 ? '#f59e0b' : '#ef4444');
+    
+    let html = `<div class="course-card" style="border-left:4px solid ${scoreColor}">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <span class="text-gray-600">测验结果：${result.correct_count}/${result.total} 题正确</span>
+            <span class="h4 font-bold" style="color:${scoreColor}">${result.score}分</span>
+        </div>
+        <div class="mb-4 p-3 rounded-xl" style="background:${scoreColor}15;color:${scoreColor}">
+            ${result.passed ? '🎉 恭喜！已达到掌握标准（≥60分）' : '💪 继续加油！建议复习后重新测验'}
+        </div>
+        <h6 class="text-gray-700 mb-3">题目解析：</h6>`;
+    
+    result.details.forEach((d, i) => {
+        html += `<div class="mb-3 p-3 rounded-xl ${d.is_correct ? 'bg-success/10' : 'bg-danger/10'}">
+            <div class="d-flex justify-content-between">
+                <span class="text-sm"><strong>Q${i+1}.</strong> ${d.question_text}</span>
+                <span class="badge" style="background:${d.is_correct ? '#22c55e' : '#ef4444'};color:white">${d.is_correct ? '✓' : '✗'}</span>
+            </div>
+            <small class="text-gray-500 mt-1 d-block">你的答案：${d.student_answer || '未作答'} | 正确答案：${d.correct_answer}</small>
+            ${d.explanation ? `<div class="text-sm text-gray-600 mt-2">💡 ${d.explanation}</div>` : ''}
+        </div>`;
+    });
+
+    if (result.ai_explanation) {
+        html += `<div class="mt-4 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i class="bi bi-robot" style="color:#8b5cf6;font-size:1.2rem"></i>
+                <span class="font-medium text-gray-700">AI智能讲解</span>
+            </div>
+            <div class="text-sm text-gray-600 whitespace-pre-wrap">${result.ai_explanation}</div>
+        </div>`;
+    }
+
+    html += `<div class="mt-4">
+            <button type="button" class="btn btn-primary" onclick="resetQuiz()">
+                <i class="bi bi-arrow-clockwise me-2"></i>重新测验
+            </button>
+        </div></div>`;
+    resultDiv.innerHTML = html;
+    resultDiv.scrollIntoView({ behavior: 'smooth' });
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>已提交';
+}
+
+function resetQuiz() {
+    const resultDiv = document.getElementById('quizResult');
+    resultDiv.classList.add('d-none');
+    resultDiv.innerHTML = '';
+    
+    document.querySelectorAll('input[name^="answer_"]').forEach(input => {
+        if (input.type === 'radio') {
+            input.checked = false;
+        } else {
+            input.value = '';
+        }
+    });
+    
+    const btn = document.querySelector('#quizForm button');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-check2-circle me-2"></i>提交答案';
+    
+    quizStartTime = Date.now();
+    
+    document.getElementById('quizForm').scrollIntoView({ behavior: 'smooth' });
+}
+
+window.addEventListener('beforeunload', () => {
+    const duration = Math.round((Date.now() - startTime) / 1000);
+    if (duration > 5) {
+        const maxVideoProgress = Math.max(...Object.values(videoProgressMap), 0);
+        const totalWatched = Object.values(watchedDurations).reduce((a, b) => a + b, 0);
+        let textProgress = 0;
+        let textReadDuration = 0;
+        for (const [mid, start] of Object.entries(textReadStartTimes)) {
+            textReadDuration += Math.round((Date.now() - start) / 1000);
+            textProgress = Math.min(100, textReadDuration / 300 * 100);
+        }
+        const data = JSON.stringify({ 
+            kp_id: kpId, 
+            study_duration: duration, 
+            progress_percent: maxVideoProgress,
+            video_progress: maxVideoProgress,
+            watched_duration: totalWatched,
+            text_progress: Math.round(textProgress),
+            text_read_duration: textReadDuration
+        });
+        const blob = new Blob([data], { type: 'application/json' });
+        navigator.sendBeacon('/api/record_progress', blob);
+    }
+});
+</script>
+{% endblock %}

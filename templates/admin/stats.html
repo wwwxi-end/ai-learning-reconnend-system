@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block title %}系统统计{% endblock %}
+{% block extra_css %}
+<style>.stat-card { transition: transform .2s; } .stat-card:hover { transform: translateY(-3px); }</style>
+{% endblock %}
+{% block content %}
+<h5 class="mb-4"><i class="bi bi-bar-chart me-2"></i>知识点掌握统计 - 多班级对比</h5>
+<div class="row mb-4 g-3">
+    <div class="col-md-12">
+        <div class="card shadow-sm">
+            <div class="card-header fw-bold">各班级知识点平均分对比</div>
+            <div class="card-body p-0">
+                <div id="kpBarChart" style="height:500px"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% for teacher_data in teacher_kp_stats %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header fw-bold">{{ teacher_data.teacher_name }}班级知识点明细</div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr><th>#</th><th>知识点</th><th>章节</th><th>平均分</th><th>学习人数</th></tr>
+            </thead>
+            <tbody>
+            {% for row in teacher_data.kp_stats %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ row.kp_name }}</td>
+                <td><span class="badge bg-gray-100 text-gray-600 text-xs">{{ row.chapter[:10] }}{% if row.chapter|length > 10 %}...{% endif %}</span></td>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="progress flex-grow-1" style="height:8px">
+                            <div class="progress-bar bg-{{ 'danger' if (row.avg_score or 0) < 60 else ('warning' if (row.avg_score or 0) < 75 else 'success') }}"
+                                 style="width:{{ row.avg_score or 0 }}%"></div>
+                        </div>
+                        <span class="text-{{ 'danger' if (row.avg_score or 0) < 60 else ('warning' if (row.avg_score or 0) < 75 else 'success') }} fw-bold">
+                            {{ row.avg_score if (row.avg_score and row.avg_score|int == row.avg_score) else ('%.2f'|format(row.avg_score or 0)) }}
+                        </span>
+                    </div>
+                </td>
+                <td>{{ row.record_count }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+<script>
+const teacherData = {{ teacher_kp_stats|tojson }};
+
+const kpNames = teacherData.length > 0 ? teacherData[0].kp_stats.map(k => k.kp_name) : [];
+
+const series = teacherData.map((td, index) => {
+    const colors = ['#52c41a', '#1890ff', '#fa8c16', '#722ed1', '#eb2f96'];
+    return {
+        name: td.teacher_name + '班级',
+        type: 'bar',
+        data: td.kp_stats.map(k => k.avg_score || 0),
+        itemStyle: { color: colors[index % colors.length] },
+        label: { 
+            show: false,
+            position: 'top', 
+            fontSize: 10,
+            formatter: (params) => {
+                const val = params.value;
+                return Number.isInteger(val) ? val : val.toFixed(1);
+            }
+        },
+        barMaxWidth: 40,
+        barGap: '30%'
+    };
+});
+
+const chart = echarts.init(document.getElementById('kpBarChart'));
+chart.setOption({
+    tooltip: { 
+        trigger: 'axis',
+        axisPointer: { type: 'shadow' },
+        formatter: function(params) {
+            let result = '<b>' + params[0].axisValue + '</b><br>';
+            params.forEach(p => {
+                result += p.marker + ' ' + p.seriesName + ': ' + p.value + '分<br>';
+            });
+            return result;
+        }
+    },
+    legend: {
+        data: teacherData.map(td => td.teacher_name + '班级'),
+        top: 10,
+        right: 10
+    },
+    grid: { 
+        left: '5%', 
+        right: '5%', 
+        bottom: '25%',
+        top: 60
+    },
+    xAxis: { 
+        type: 'category', 
+        data: kpNames, 
+        axisLabel: { 
+            rotate: 45, 
+            fontSize: 11 
+        },
+        name: '知识点',
+        nameLocation: 'middle',
+        nameGap: 35
+    },
+    yAxis: { 
+        type: 'value', 
+        max: 100, 
+        name: '平均分',
+        axisLabel: { formatter: '{value}分' }
+    },
+    series: series
+});
+window.addEventListener('resize', () => chart.resize());
+</script>
+{% endblock %}

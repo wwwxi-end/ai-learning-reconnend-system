@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% block title %}管理员控制台{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4><i class="bi bi-speedometer2 text-primary me-2"></i>系统控制台</h4>
+    <div class="text-muted small"><i class="bi bi-clock me-1"></i>{{ now.strftime('%Y-%m-%d') if now else '' }}</div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card bg-primary text-white shadow-sm h-100 rounded-xl overflow-hidden">
+            <div class="card-body d-flex align-items-center p-4">
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center me-3">
+                    <i class="bi bi-people-fill" style="font-size:1.5rem;"></i>
+                </div>
+                <div>
+                    <div class="h3 mb-0 fw-bold">{{ stats.total_students }}</div>
+                    <div class="small opacity-75">在校学生</div>
+                </div>
+            </div>
+            <div class="card-footer bg-white/10 px-4 py-2">
+                <a href="{{ url_for('admin.user_list', role='student') }}" class="text-white-700 small">查看详情 →</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card bg-success text-white shadow-sm h-100 rounded-xl overflow-hidden">
+            <div class="card-body d-flex align-items-center p-4">
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center me-3">
+                    <i class="bi bi-person-badge-fill" style="font-size:1.5rem;"></i>
+                </div>
+                <div>
+                    <div class="h3 mb-0 fw-bold">{{ stats.total_teachers }}</div>
+                    <div class="small opacity-75">教师人数</div>
+                </div>
+            </div>
+            <div class="card-footer bg-white/10 px-4 py-2">
+                <a href="{{ url_for('admin.user_list', role='teacher') }}" class="text-white-700 small">查看详情 →</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card bg-info text-white shadow-sm h-100 rounded-xl overflow-hidden">
+            <div class="card-body d-flex align-items-center p-4">
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center me-3">
+                    <i class="bi bi-diagram-3-fill" style="font-size:1.5rem;"></i>
+                </div>
+                <div>
+                    <div class="h3 mb-0 fw-bold">{{ stats.total_kps }}</div>
+                    <div class="small opacity-75">知识点数</div>
+                </div>
+            </div>
+            <div class="card-footer bg-white/10 px-4 py-2">
+                <a href="{{ url_for('admin.knowledge_point_list') }}" class="text-white-700 small">查看详情 →</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card bg-warning text-white shadow-sm h-100 rounded-xl overflow-hidden">
+            <div class="card-body d-flex align-items-center p-4">
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center me-3">
+                    <i class="bi bi-journal-check" style="font-size:1.5rem;"></i>
+                </div>
+                <div>
+                    <div class="h3 mb-0 fw-bold">{{ stats.total_records }}</div>
+                    <div class="small opacity-75">学习记录</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="course-card">
+            <h5 class="font-weight-bold text-gray-800 mb-4"><i class="bi bi-person-plus text-primary me-2"></i>快速添加用户</h5>
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ url_for('admin.create_user') }}?role=student" class="btn btn-outline-success btn-sm">
+                    <i class="bi bi-person-plus me-1"></i>添加学生
+                </a>
+                <a href="{{ url_for('admin.create_user') }}?role=teacher" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-person-plus me-1"></i>添加教师
+                </a>
+                <a href="{{ url_for('admin.batch_import_users') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-upload me-1"></i>批量导入CSV
+                </a>
+                <a href="{{ url_for('admin.create_knowledge_point') }}" class="btn btn-outline-info btn-sm">
+                    <i class="bi bi-plus-circle me-1"></i>添加知识点
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="course-card">
+            <h5 class="font-weight-bold text-gray-800 mb-4"><i class="bi bi-collection text-primary me-2"></i>课程组管理</h5>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span>共 <strong>{{ stats.total_groups }}</strong> 个课程组</span>
+                <a href="{{ url_for('admin.course_group_list') }}" class="btn btn-outline-primary btn-sm">管理课程组</a>
+            </div>
+            <a href="{{ url_for('admin.system_stats') }}" class="btn btn-outline-warning btn-sm w-full py-3">
+                <i class="bi bi-bar-chart me-1"></i>查看系统统计报告
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="course-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="font-weight-bold text-gray-800"><i class="bi bi-people text-primary me-2"></i>最近注册学生</h5>
+                <a href="{{ url_for('admin.user_list', role='student') }}" class="btn btn-outline-primary btn-sm">全部</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light"><tr><th>姓名</th><th>学号</th><th>注册时间</th></tr></thead>
+                    <tbody>
+                    {% for s in recent_students %}
+                    <tr>
+                        <td>{{ s.real_name }}</td>
+                        <td><small class="text-muted">{{ s.student_id or '-' }}</small></td>
+                        <td><small class="text-muted">{{ s.created_at.strftime('%m-%d') if s.created_at else '-' }}</small></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" class="text-center text-muted py-4">暂无学生</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="course-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="font-weight-bold text-gray-800"><i class="bi bi-person-badge text-primary me-2"></i>教师列表</h5>
+                <a href="{{ url_for('admin.user_list', role='teacher') }}" class="btn btn-outline-success btn-sm">全部</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light"><tr><th>姓名</th><th>工号</th><th>课程组</th></tr></thead>
+                    <tbody>
+                    {% for t in recent_teachers %}
+                    <tr>
+                        <td>{{ t.real_name }}</td>
+                        <td><small class="text-muted">{{ t.teacher_id or '-' }}</small></td>
+                        <td><small class="text-muted">{{ t.course_group or '-' }}</small></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" class="text-center text-muted py-4">暂无教师</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
